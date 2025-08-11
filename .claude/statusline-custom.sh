@@ -4,7 +4,7 @@
 input=$(cat)
 
 # Get ccusage output first - this was working fine
-ccusage_full=$(echo "$input" | npx -y ccusage@latest statusline 2>/dev/null || echo "")
+ccusage_full=$(echo "$input" | npx -y ccusage@latest statusline --no-offline 2>/dev/null || echo "")
 
 # If ccusage fails or returns invalid data, use fallback
 if [[ -z "$ccusage_full" || "$ccusage_full" =~ \.sh ]]; then
