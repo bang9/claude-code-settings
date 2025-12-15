@@ -3,30 +3,8 @@
 # Read JSON input
 input=$(cat)
 
-# Get ccusage output first - this was working fine
-ccusage_full=$(echo "$input" | npx -y ccusage@latest statusline --no-offline 2>/dev/null || echo "")
-
-# If ccusage fails or returns invalid data, use fallback
-if [[ -z "$ccusage_full" || "$ccusage_full" =~ \.sh ]]; then
-    # Fallback: get model from JSON and use defaults
-    model=$(echo "$input" | jq -r '.model.display_name // "Sonnet 4"' 2>/dev/null)
-    base_part="🤖 $model | 💰 $0.00 session / $0.00 today"
-else
-    # ccusage worked, check if session shows N/A (new session) or has actual cost
-    if [[ "$ccusage_full" =~ N/A[[:space:]]*session ]]; then
-        # New session (resume case) - replace N/A with $0.00
-        base_part=$(echo "$ccusage_full" | sed 's/N\/A session/\$0.00 session/')
-    else
-        # Ongoing session - keep ccusage output as is
-        base_part="$ccusage_full"
-    fi
-    
-    # Remove the block and rate info (everything after "today")  
-    base_part=$(echo "$base_part" | sed 's/\(.*today\).*/\1/')
-fi
-
-# Add git info
-branch=$(git branch --show-current 2>/dev/null || echo "no-git")
+# Debug: save JSON for inspection
+echo "$input" > /tmp/claude-statusline-input.json
 
 # Color codes
 GREEN='\033[1;32m'
@@ -34,6 +12,42 @@ YELLOW='\033[1;93m'
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 RESET='\033[0m'
+
+# Get model name from JSON
+model=$(echo "$input" | jq -r '.model.display_name // "Sonnet 4"' 2>/dev/null)
+
+# Get ccusage output
+ccusage_full=$(echo "$input" | npx -y ccusage@latest statusline --no-offline 2>/dev/null || echo "")
+
+# If ccusage fails or returns invalid data, use fallback
+if [[ -z "$ccusage_full" || "$ccusage_full" =~ \.sh ]]; then
+    base_part="🤖 ${model}${GREEN}(0%)${RESET} | 💰 \$0.00 session / \$0.00 today"
+else
+    # Extract percentage number from ccusage 🧠 section (e.g., "🧠 39,837 (20%)" → "20")
+    context_num=$(echo "$ccusage_full" | grep -oE '🧠[^|]+' | grep -oE '\([0-9]+%\)' | grep -oE '[0-9]+')
+
+    # Determine color based on ccusage thresholds
+    if [[ "$context_num" -lt 50 ]]; then
+        CONTEXT_COLOR="$GREEN"
+    elif [[ "$context_num" -lt 80 ]]; then
+        CONTEXT_COLOR="$YELLOW"
+    else
+        CONTEXT_COLOR="$RED"
+    fi
+
+    # Extract cost info (everything after 💰 up to today)
+    cost_part=$(echo "$ccusage_full" | sed 's/.*💰/💰/' | sed 's/\(.*today\).*/\1/')
+
+    # Handle N/A session (resume case)
+    if [[ "$cost_part" =~ N/A[[:space:]]*session ]]; then
+        cost_part=$(echo "$cost_part" | sed 's/N\/A session/\$0.00 session/')
+    fi
+
+    base_part="🤖 ${model}${CONTEXT_COLOR}(${context_num}%)${RESET} | ${cost_part}"
+fi
+
+# Add git info
+branch=$(git branch --show-current 2>/dev/null || echo "no-git")
 
 # Get git counts
 staged=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
