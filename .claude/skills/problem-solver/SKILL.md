@@ -17,19 +17,22 @@ A structured workflow for solving problems through iterative planning, reproduct
 ## Workflow Overview
 
 ```
-Phase 0: Input Collection
+Phase 0: Input Collection (gather info from user)
     ↓
 Phase 1: First-Pass Planning & Execution
-    ↓ (iterate until solved)
+    Step 1.1 → 1.2 → 1.3 → [1.4 ↔ 1.5 iterate until solved]
+    ↓
 Phase 2: Solution Validation
     ↓
     ├─→ Fundamental Fix → Complete
-    └─→ Workaround → Return to Phase 1
+    └─→ Workaround → Return to Phase 1 with new approach
 ```
 
 ---
 
 ## Phase 0: Input Collection
+
+> **Purpose**: Gather sufficient information from the user before analysis begins.
 
 ### Required Information Checklist
 
@@ -56,6 +59,8 @@ If any required information is unclear or ambiguous:
 ## Phase 1: First-Pass Planning & Execution
 
 ### Step 1.1: Requirements Definition
+
+> **Purpose**: Structure and analyze the collected information into actionable requirements.
 
 1. List all requirements as bullet points
 2. Identify any ambiguous terms or conditions
@@ -94,10 +99,12 @@ Choose appropriate method(s) based on the problem type. Combine as needed:
 
 ### Step 1.5: Verification
 
-- [ ] Issue no longer reproduces in test environment
+- [ ] Issue no longer reproduces in test environment (run multiple times for intermittent issues)
 - [ ] All existing tests pass
 - [ ] Edge cases considered and handled
 - [ ] No new warnings or errors introduced
+
+> For intermittent or timing-related issues, a single successful test is not sufficient. Run verification multiple times to ensure the fix is reliable.
 
 ---
 
@@ -145,4 +152,4 @@ All must be true:
 
 For detailed checklists and examples, see:
 - [Analysis Checklist](references/ANALYSIS.md)
-- [Common Patterns](references/PATTERNS.md)
+- [Reproduction Strategies](references/PATTERNS.md)
