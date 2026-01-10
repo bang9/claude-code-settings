@@ -58,6 +58,8 @@ If any required information is unclear or ambiguous:
 
 ## Phase 1: First-Pass Planning & Execution
 
+> **Planning (Step 1.1-1.3) is the most critical part.** Do not rush to implementation. A well-understood problem with a solid plan leads to a fundamental solution.
+
 ### Step 1.1: Requirements Definition
 
 > **Purpose**: Structure and analyze the collected information into actionable requirements.
@@ -91,6 +93,8 @@ Choose appropriate method(s) based on the problem type. Combine as needed:
 **Verification checkpoint**: Can you reliably trigger the issue?
 
 ### Step 1.4: Implementation
+
+> Only proceed to implementation when Step 1.1-1.3 are thoroughly completed. Skipping planning leads to workarounds, not fundamental fixes.
 
 1. Create task list with TodoWrite
 2. Implement in small, testable increments
