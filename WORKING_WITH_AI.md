@@ -2,6 +2,16 @@
 
 A practical guide for collaborating effectively with AI agents in your development workflow.
 
+## Table of Contents
+
+- [Teach Tools, Not Tasks](#teach-tools-not-tasks)
+- [Write Context Documents That Actually Matter](#write-context-documents-that-actually-matter)
+- [Give Clear Directions, Not Vague Requests](#give-clear-directions-not-vague-requests)
+- [Create Your Own Shorthand](#create-your-own-shorthand)
+- [Delegate the Work That Doesn't Need You](#delegate-the-work-that-doesnt-need-you)
+- [Let AI Correct Itself](#let-ai-correct-itself)
+- [One Last Thing: Your Job as the Human](#one-last-thing-your-job-as-the-human)
+
 
 ## Teach Tools, Not Tasks
 
@@ -69,22 +79,48 @@ Even when you're trying to be clear, sometimes your instructions come out vague.
 
 Make it a habit: before the AI goes off and builds something, confirm you're both on the same page. One quick clarification upfront can save you from a long detour later. Don't take the scenic route when you don't have to.
 
+### Show the Shape, Let AI Fill the Details
+
+If you have a clear direction in mind, sketch it out — a rough interface, some pseudo code, or even just the structure you're imagining. You don't need to specify every detail.
+
+As an SDK developer, I often give the AI an interface definition along with how I expect it to be used and behave. Once the AI understands the outer shape, it fills in the implementation surprisingly well. Get the surface right, and the internals tend to follow.
+
 
 ## Create Your Own Shorthand
 
 > **Consistency beats verbosity.**
 
-AI works on pattern recognition. Once it learns your conventions, you don't need to spell everything out.
+You don't need to spell everything out. AI works on pattern recognition — once it learns your conventions, it'll follow them.
 
-For example, if you're describing UI specs, instead of typing `margin-left: 10px` every time, just say `m-left=10`. Create a shorthand system that both you and the AI understand. As long as you're consistent, the AI will pick up on the pattern and respond accordingly.
+For example, if you're describing UI specs, instead of typing `margin-left: 10px` every time, just say `m-left=10`. Create a shorthand system that works for you. As long as you're consistent, the AI will pick up on the pattern and respond accordingly.
 
 This saves context, saves your fingers, and keeps communication tight. Define your rules once, then use them everywhere.
 
 
-## Delegate What Doesn't Need You
+## Delegate the Work That Doesn't Need You
 
 > **Let go of tasks that feel important but aren't.**
 
-We've been automating things like code formatting with tools for years. Now, with AI, we can go further — writing commit messages, drafting PR descriptions, generating boilerplate documentation.
+You've been automating things like code formatting with tools for years. Now, with AI, you can go further — writing commit messages, drafting PR descriptions, generating boilerplate documentation.
 
-Some of these might feel important. But honestly? They're not critical enough to demand your attention every time. Find these tasks, let go of the urge to do them yourself, and delegate them to AI. Set up workflows, let the agent handle it, and move on to work that actually needs you.
+Some of these might feel important. But honestly? They're not critical enough to demand your attention every time. Find these tasks, let go of the urge to do them yourself, and hand them off to AI. Set up workflows, let the agent handle it, and move on to work that actually needs you.
+
+
+## Let AI Correct Itself
+
+> **AI works best when it can try, verify, and try again.**
+
+This ties back to giving tools. Before the AI starts any task, make sure there's a way to verify the results — tests, type checks, linters, whatever lets the AI confirm its work without waiting for you. Give it an environment where it can iterate on its own.
+
+The same applies to debugging. Don't let the AI jump straight into fixing. Tell it to establish a reproduction environment first — a minimal test case, console logs to trace execution, or mock data that reliably triggers the issue. Only after the problem is reproducible should changes begin. And remember: a single successful test doesn't prove the fix works, especially for timing-related or intermittent issues. Make sure the AI verifies multiple times.
+
+Even after the work is done, the loop shouldn't stop. Push the AI to evaluate whether the solution is a fundamental fix or just a workaround masking the symptom. If it's the latter, send it back. This cycle of implement, verify, and refine is what turns rough solutions into reliable ones.
+
+
+## One Last Thing: Your Job as the Human
+
+> **AI is a tool. You're the one responsible for what it builds.**
+
+Don't keep pushing AI in the wrong direction just because you want to "adapt to new tech." AI is powerful, but its limits are clear. Stop wasting time and start creating real leverage. That said, things can change completely in a few months. Keep a pulse on what AI can actually do well, how far it can go, and evolve how you use it accordingly. And just because your workload feels lighter doesn't mean your productivity is up — stay honest with yourself about that.
+
+Whatever you build with AI, make sure you can verify it. Build the environment, build the habits — whatever it takes. The AI writes the output, but it does so under your direction. That makes it your responsibility. Own it. And remember: your partner in the workflow might be an AI now, but the person sitting next to you is still human. Don't push your responsibility onto them. Don't make your teammates carry the burden of cleaning up after you.
