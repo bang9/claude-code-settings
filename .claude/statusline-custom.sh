@@ -11,39 +11,69 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;93m'
 RED='\033[1;31m'
 BLUE='\033[1;34m'
+CYAN='\033[1;36m'
+DIM='\033[2m'
 RESET='\033[0m'
 
 # Get model name from JSON
 model=$(echo "$input" | jq -r '.model.display_name // "Sonnet 4"' 2>/dev/null)
 
-# Get ccusage output
-ccusage_full=$(echo "$input" | npx -y ccusage@latest statusline --no-offline 2>/dev/null || echo "")
+# Extract context window data directly from stdin (Claude HUD approach)
+total_input_tokens=$(echo "$input" | jq -r '.context_window.total_input_tokens // 0' 2>/dev/null)
+context_window_size=$(echo "$input" | jq -r '.context_window.context_window_size // 200000' 2>/dev/null)
+cache_creation=$(echo "$input" | jq -r '.context_window.current_usage.cache_creation_input_tokens // 0' 2>/dev/null)
+cache_read=$(echo "$input" | jq -r '.context_window.current_usage.cache_read_input_tokens // 0' 2>/dev/null)
 
-# If ccusage fails or returns invalid data, use fallback
-if [[ -z "$ccusage_full" || "$ccusage_full" =~ \.sh ]]; then
-    base_part="🤖 ${model}${GREEN}(0%)${RESET} | 💰 \$0.00 session / \$0.00 today"
+# Extract cost data
+session_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // 0' 2>/dev/null)
+
+# Calculate context usage percentage
+if [[ "$context_window_size" -gt 0 ]]; then
+    context_num=$((total_input_tokens * 100 / context_window_size))
 else
-    # Extract percentage number from ccusage 🧠 section (e.g., "🧠 39,837 (20%)" → "20")
-    context_num=$(echo "$ccusage_full" | grep -oE '🧠[^|]+' | grep -oE '\([0-9]+%\)' | grep -oE '[0-9]+')
+    context_num=0
+fi
 
-    # Determine color based on ccusage thresholds
-    if [[ "$context_num" -lt 50 ]]; then
-        CONTEXT_COLOR="$GREEN"
-    elif [[ "$context_num" -lt 80 ]]; then
-        CONTEXT_COLOR="$YELLOW"
+# Determine color based on thresholds
+if [[ "$context_num" -lt 50 ]]; then
+    CONTEXT_COLOR="$GREEN"
+elif [[ "$context_num" -lt 80 ]]; then
+    CONTEXT_COLOR="$YELLOW"
+else
+    CONTEXT_COLOR="$RED"
+fi
+
+# Format token counts (k for thousands, M for millions)
+format_tokens() {
+    local tokens=$1
+    if [[ "$tokens" -ge 1000000 ]]; then
+        printf "%.1fM" "$(echo "scale=1; $tokens / 1000000" | bc)"
+    elif [[ "$tokens" -ge 1000 ]]; then
+        printf "%.1fk" "$(echo "scale=1; $tokens / 1000" | bc)"
     else
-        CONTEXT_COLOR="$RED"
+        echo "$tokens"
     fi
+}
 
-    # Extract cost info (everything after 💰 up to today)
-    cost_part=$(echo "$ccusage_full" | sed 's/.*💰/💰/' | sed 's/\(.*today\).*/\1/')
+# Build context bar (10 chars width)
+bar_width=10
+filled=$((context_num * bar_width / 100))
+[[ "$filled" -gt "$bar_width" ]] && filled=$bar_width
+empty=$((bar_width - filled))
+bar="${CONTEXT_COLOR}$(printf '█%.0s' $(seq 1 $filled 2>/dev/null) || echo '')${DIM}$(printf '░%.0s' $(seq 1 $empty 2>/dev/null) || echo '')${RESET}"
 
-    # Handle N/A session (resume case)
-    if [[ "$cost_part" =~ N/A[[:space:]]*session ]]; then
-        cost_part=$(echo "$cost_part" | sed 's/N\/A session/\$0.00 session/')
-    fi
+# Format cost
+session_cost_fmt=$(printf "\$%.2f" "$session_cost")
 
-    base_part="🤖 ${model}${CONTEXT_COLOR}(${context_num}%)${RESET} | ${cost_part}"
+# Build base part with context bar
+formatted_tokens=$(format_tokens "$total_input_tokens")
+base_part="🤖 ${model} ${bar} ${CONTEXT_COLOR}${context_num}%${RESET} ${DIM}(${formatted_tokens})${RESET} | 💰 ${session_cost_fmt}"
+
+# Show cache info if significant (>1000 tokens)
+total_cache=$((cache_creation + cache_read))
+if [[ "$total_cache" -gt 1000 ]]; then
+    cache_fmt=$(format_tokens "$total_cache")
+    base_part="${base_part} ${DIM}cache:${cache_fmt}${RESET}"
 fi
 
 # Add git info
