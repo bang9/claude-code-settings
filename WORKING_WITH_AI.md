@@ -23,3 +23,23 @@ Instead, turn those repetitive tasks into tools. Set up scripts, configure linte
 
 This way, the AI becomes a skilled operator of your toolchain, not just a text processor trying to simulate what tools already do better.
 
+
+## Write Context Documents That Actually Matter
+
+> **Most AI-generated documentation is garbage. Be intentional about what you keep.**
+
+It's easy to let documentation pile up when working with AI. The agent generates docs, you save them "just in case," and before you know it, you have a folder full of outdated, overly verbose files that do more harm than good. They bloat the context, create confusion, and ultimately slow things down.
+
+So what should you actually document?
+
+### Document Recurring Mistakes, Not Everything
+
+Pay attention to patterns. When you notice the same mistakes happening over and over — whether it's implementation errors or misunderstandings about your codebase — that's your signal. These are the things worth documenting.
+
+The good news? These critical, time-consuming mistakes aren't actually that many. Fix them with well-written guidance, and the AI will handle most tasks smoothly.
+
+### Write for Abstraction, Not Just Recording
+
+Don't just log what went wrong. Think about *how* to guide the AI so it can solve not just this specific problem, but similar ones in the future.
+
+The goal is to write documentation that teaches principles, not just procedures. If you can abstract the core insight well enough, one piece of guidance can help the AI navigate ten different situations. That's the difference between documentation that compounds in value and documentation that just takes up space.
