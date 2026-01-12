@@ -34,12 +34,22 @@ So what should you actually document?
 
 ### Document Recurring Mistakes, Not Everything
 
-Pay attention to patterns. When you notice the same mistakes happening over and over — whether it's implementation errors or misunderstandings about your codebase — that's your signal. These are the things worth documenting.
+Pay attention to patterns. There are two types of recurring mistakes worth documenting:
 
-The good news? These critical, time-consuming mistakes aren't actually that many. Fix them with well-written guidance, and the AI will handle most tasks smoothly.
+1. **Things humans overlook** — Context that you forget to provide, assumptions you make without realizing, or project-specific knowledge that isn't obvious from the code alone.
+
+2. **Things AI consistently gets wrong** — Implementation patterns the AI repeatedly fails at, misunderstandings about your architecture, or edge cases it keeps missing.
+
+When you spot these patterns, that's your signal to write it down. The good news? These critical, time-consuming mistakes aren't actually that many. Fix them with well-written guidance, and the AI will handle most tasks smoothly.
 
 ### Write for Abstraction, Not Just Recording
 
 Don't just log what went wrong. Think about *how* to guide the AI so it can solve not just this specific problem, but similar ones in the future.
 
 The goal is to write documentation that teaches principles, not just procedures. If you can abstract the core insight well enough, one piece of guidance can help the AI navigate ten different situations. That's the difference between documentation that compounds in value and documentation that just takes up space.
+
+### Place Documents Where They're Needed
+
+Break your documentation into smaller pieces and put them where they belong. CLAUDE.md supports this — you can place context files in specific directories, and they'll only be loaded when the AI is working in that area.
+
+If a piece of guidance only applies to code under `src/a/`, put it there. This way, the AI only pulls in relevant context when it actually needs it, keeping the working context lean and focused.
