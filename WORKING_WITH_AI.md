@@ -79,3 +79,12 @@ AI works on pattern recognition. Once it learns your conventions, you don't need
 For example, if you're describing UI specs, instead of typing `margin-left: 10px` every time, just say `m-left=10`. Create a shorthand system that both you and the AI understand. As long as you're consistent, the AI will pick up on the pattern and respond accordingly.
 
 This saves context, saves your fingers, and keeps communication tight. Define your rules once, then use them everywhere.
+
+
+## Delegate What Doesn't Need You
+
+> **Let go of tasks that feel important but aren't.**
+
+We've been automating things like code formatting with tools for years. Now, with AI, we can go further — writing commit messages, drafting PR descriptions, generating boilerplate documentation.
+
+Some of these might feel important. But honestly? They're not critical enough to demand your attention every time. Find these tasks, let go of the urge to do them yourself, and delegate them to AI. Set up workflows, let the agent handle it, and move on to work that actually needs you.
