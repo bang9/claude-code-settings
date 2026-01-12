@@ -53,3 +53,29 @@ The goal is to write documentation that teaches principles, not just procedures.
 Break your documentation into smaller pieces and put them where they belong. CLAUDE.md supports this — you can place context files in specific directories, and they'll only be loaded when the AI is working in that area.
 
 If a piece of guidance only applies to code under `src/a/`, put it there. This way, the AI only pulls in relevant context when it actually needs it, keeping the working context lean and focused.
+
+
+## Give Clear Directions, Not Vague Requests
+
+> **Without the right keywords, the AI will wander.**
+
+When you give vague instructions, the AI has no choice but to explore. Tell it to "modify the auth module," and it'll start searching for "auth module" in your codebase. If it's lucky, it finds it right away. If not, it falls back to related keywords, tries different variations, and burns through context just trying to locate what you already know.
+
+Be specific. Give the AI the exact file path, the class name, the function to modify. These keywords eliminate guesswork and let the AI get straight to work. Less exploration means less wasted context, faster results, and lower costs.
+
+### When in Doubt, Ask the AI to Ask
+
+Even when you're trying to be clear, sometimes your instructions come out vague. That's fine — just tell the AI to ask clarifying questions if anything is unclear.
+
+Make it a habit: before the AI goes off and builds something, confirm you're both on the same page. One quick clarification upfront can save you from a long detour later. Don't take the scenic route when you don't have to.
+
+
+## Create Your Own Shorthand
+
+> **Consistency beats verbosity.**
+
+AI works on pattern recognition. Once it learns your conventions, you don't need to spell everything out.
+
+For example, if you're describing UI specs, instead of typing `margin-left: 10px` every time, just say `m-left=10`. Create a shorthand system that both you and the AI understand. As long as you're consistent, the AI will pick up on the pattern and respond accordingly.
+
+This saves context, saves your fingers, and keeps communication tight. Define your rules once, then use them everywhere.
