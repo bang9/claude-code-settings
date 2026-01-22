@@ -8,6 +8,7 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;93m'
 RED='\033[1;31m'
 BLUE='\033[1;34m'
+MAGENTA='\033[1;35m'
 DIM='\033[2m'
 RESET='\033[0m'
 
@@ -57,20 +58,25 @@ fi
 # Check if autoCompact is enabled in Claude Code settings (default: true)
 auto_compact=$(jq -r '.autoCompactEnabled // true' ~/.claude.json 2>/dev/null)
 
-# Compact buffer only if autoCompact is enabled (~1.5% of context window)
+# Compact buffer only if autoCompact is enabled (~22.5% of context window)
 if [[ "$auto_compact" == "false" ]]; then
     COMPACT_BUFFER=0
 else
-    COMPACT_BUFFER=3000
+    COMPACT_BUFFER=$((context_window_size * 225 / 1000))
 fi
 
-# Calculate actual context usage: cache tokens + compact buffer
-total_context=$((cache_creation + cache_read + COMPACT_BUFFER))
+# Calculate actual context usage
+used_context=$((cache_creation + cache_read))
+total_context=$((used_context + COMPACT_BUFFER))
 
-# Calculate context usage percentage
+# Calculate percentages
 if [[ "$context_window_size" -gt 0 ]]; then
+    used_percent=$((used_context * 100 / context_window_size))
+    compact_percent=$((COMPACT_BUFFER * 100 / context_window_size))
     context_num=$((total_context * 100 / context_window_size))
 else
+    used_percent=0
+    compact_percent=0
     context_num=0
 fi
 
@@ -95,12 +101,29 @@ format_tokens() {
     fi
 }
 
-# Build context bar (10 chars width)
+# Build context bar (10 chars width): autocompact (magenta) + used + free
 bar_width=10
-filled=$((context_num * bar_width / 100))
-[[ "$filled" -gt "$bar_width" ]] && filled=$bar_width
-empty=$((bar_width - filled))
-bar="${CONTEXT_COLOR}$(printf '█%.0s' $(seq 1 $filled 2>/dev/null) || echo '')${DIM}$(printf '░%.0s' $(seq 1 $empty 2>/dev/null) || echo '')${RESET}"
+
+# First calculate total filled bars based on context_num (ensures visual accuracy)
+filled_bars=$((context_num * bar_width / 100))
+[[ "$filled_bars" -gt "$bar_width" ]] && filled_bars=$bar_width
+
+# Then split filled bars between compact and used proportionally
+if [[ "$total_context" -gt 0 ]]; then
+    compact_bars=$((COMPACT_BUFFER * filled_bars / total_context))
+else
+    compact_bars=0
+fi
+[[ "$compact_bars" -lt 1 && "$COMPACT_BUFFER" -gt 0 && "$filled_bars" -gt 0 ]] && compact_bars=1
+[[ "$compact_bars" -gt "$filled_bars" ]] && compact_bars=$filled_bars
+used_bars=$((filled_bars - compact_bars))
+free_bars=$((bar_width - filled_bars))
+
+# Build bar: █ (autocompact/magenta) + █ (used) + ░ (free)
+bar_compact="${MAGENTA}$(printf '█%.0s' $(seq 1 $compact_bars 2>/dev/null) 2>/dev/null || echo '')${RESET}"
+bar_used="${CONTEXT_COLOR}$(printf '█%.0s' $(seq 1 $used_bars 2>/dev/null) 2>/dev/null || echo '')${RESET}"
+bar_free="${DIM}${CONTEXT_COLOR}$(printf '░%.0s' $(seq 1 $free_bars 2>/dev/null) 2>/dev/null || echo '')${RESET}"
+bar="${bar_compact}${bar_used}${bar_free}"
 
 # Format cost
 session_cost_fmt=$(printf "\$%.2f" "$session_cost")
