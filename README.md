@@ -21,3 +21,12 @@ Structured workflow for debugging, bug fixes, and feature implementations.
 - Bug investigation requiring root cause analysis
 - Feature implementation needing step-by-step verification
 - Complex issues where you want to avoid workaround solutions
+
+### [code-review](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/code-review/SKILL.md)
+
+Review current branch changes with a team of specialized reviewers (security, performance, test coverage).
+
+**When to use:**
+- Reviewing current branch or PR before merging
+- Getting feedback on code changes from multiple perspectives
+- Ensuring code quality across security, performance, and test coverage
