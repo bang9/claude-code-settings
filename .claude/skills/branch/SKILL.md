@@ -65,6 +65,7 @@ Based on the analysis from Step 1, generate a branch name following this convent
 | `docs`     | Documentation only                                 |
 | `test`     | Adding or updating tests                           |
 | `perf`     | Performance improvement                            |
+| `ci`       | CI/CD workflows and GitHub Actions                 |
 
 #### Naming Rules
 
@@ -77,16 +78,13 @@ Based on the analysis from Step 1, generate a branch name following this convent
   - `chore/update-lockfile`
   - `refactor/extract-layout-utils`
 
-### Step 3: Confirm and Create
+### Step 3: Create Branch
 
-1. Present the proposed branch name to the user
-2. Wait for user confirmation (or let them suggest an alternative)
-3. Once confirmed, run: `git checkout -b {branch-name}`
-4. Confirm the branch was created successfully
+1. Run: `git checkout -b {branch-name}`
+2. Confirm the branch was created successfully
 
 ## Important Notes
 
-- **Never** create a branch without user confirmation on the name
 - **Never** run on a non-default branch — this prevents accidental branching from feature branches
 - Keep the analysis brief — this is a quick utility, not a deep investigation
 - If the user provides a specific branch name, use it as-is (skip analysis)
