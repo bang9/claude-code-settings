@@ -13,6 +13,15 @@ Generate commit messages following the Conventional Commits specification.
 
 ## Skills
 
+### [branch](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/branch/SKILL.md)
+
+Create a new git branch from the default branch based on current conversation context or uncommitted changes.
+
+**When to use:**
+- Creating a new branch for a feature or bug fix
+- Generating conventional-commit-style branch names automatically
+- Starting new work from the default branch
+
 ### [problem-solver](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/problem-solver/SKILL.md)
 
 Structured workflow for debugging, bug fixes, and feature implementations.
