@@ -1,7 +1,9 @@
 {
   "teammateMode": "in-process",
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "ENABLE_TOOL_SEARCH": "1",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000"
   },
   "statusLine": {
     "type": "command",
@@ -15,6 +17,7 @@
     "lastShownTime": 1753923964832
   },
   "enabledPlugins": {
-    "redit@ai-tools": true
+    "redit@ai-tools": true,
+    "swift-lsp@claude-plugins-official": true
   }
 }
