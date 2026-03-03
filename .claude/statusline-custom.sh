@@ -33,53 +33,53 @@ BAR_WIDTH=10
 # -----------------------------------------------------------------------------
 
 format_tokens() {
-    local tokens=$1
-    if [[ "$tokens" -ge 1000000 ]]; then
-        printf "%.1fM" "$(echo "scale=1; $tokens / 1000000" | bc)"
-    elif [[ "$tokens" -ge 1000 ]]; then
-        printf "%.1fk" "$(echo "scale=1; $tokens / 1000" | bc)"
-    else
-        echo "$tokens"
-    fi
+  local tokens=$1
+  if [[ "$tokens" -ge 1000000 ]]; then
+    printf "%.1fM" "$(echo "scale=1; $tokens / 1000000" | bc)"
+  elif [[ "$tokens" -ge 1000 ]]; then
+    printf "%.1fk" "$(echo "scale=1; $tokens / 1000" | bc)"
+  else
+    echo "$tokens"
+  fi
 }
 
 get_context_color() {
-    local percent=$1
-    if [[ "$percent" -lt 50 ]]; then
-        echo "$GREEN"
-    elif [[ "$percent" -lt 80 ]]; then
-        echo "$YELLOW"
-    else
-        echo "$RED"
-    fi
+  local percent=$1
+  if [[ "$percent" -lt 50 ]]; then
+    echo "$GREEN"
+  elif [[ "$percent" -lt 80 ]]; then
+    echo "$YELLOW"
+  else
+    echo "$RED"
+  fi
 }
 
 build_progress_bar() {
-    local compact_bars=$1
-    local used_bars=$2
-    local free_bars=$3
-    local context_color=$4
+  local compact_bars=$1
+  local used_bars=$2
+  local free_bars=$3
+  local context_color=$4
 
-    local bar=""
-    [[ "$compact_bars" -gt 0 ]] && bar+="${MAGENTA}$(printf '█%.0s' $(seq 1 $compact_bars))${RESET}"
-    [[ "$used_bars" -gt 0 ]] && bar+="${context_color}$(printf '█%.0s' $(seq 1 $used_bars))${RESET}"
-    [[ "$free_bars" -gt 0 ]] && bar+="${DIM}${context_color}$(printf '░%.0s' $(seq 1 $free_bars))${NORMAL}${RESET}"
-    echo "$bar"
+  local bar=""
+  [[ "$compact_bars" -gt 0 ]] && bar+="${MAGENTA}$(printf '█%.0s' $(seq 1 $compact_bars))${RESET}"
+  [[ "$used_bars" -gt 0 ]] && bar+="${context_color}$(printf '█%.0s' $(seq 1 $used_bars))${RESET}"
+  [[ "$free_bars" -gt 0 ]] && bar+="${DIM}${context_color}$(printf '░%.0s' $(seq 1 $free_bars))${NORMAL}${RESET}"
+  echo "$bar"
 }
 
 build_git_status() {
-    local staged=$1
-    local modified=$2
-    local deleted=$3
-    local untracked=$4
+  local staged=$1
+  local modified=$2
+  local deleted=$3
+  local untracked=$4
 
-    local status=""
-    [[ "$staged" -gt 0 ]] && status+="${GREEN}${staged}${RESET}·"
-    [[ "$modified" -gt 0 ]] && status+="${YELLOW}${modified}${RESET}·"
-    [[ "$deleted" -gt 0 ]] && status+="${RED}${deleted}${RESET}·"
-    [[ "$untracked" -gt 0 ]] && status+="${BLUE}${untracked}${RESET}·"
+  local status=""
+  [[ "$staged" -gt 0 ]] && status+="${GREEN}${staged}${RESET}·"
+  [[ "$modified" -gt 0 ]] && status+="${YELLOW}${modified}${RESET}·"
+  [[ "$deleted" -gt 0 ]] && status+="${RED}${deleted}${RESET}·"
+  [[ "$untracked" -gt 0 ]] && status+="${BLUE}${untracked}${RESET}·"
 
-    [[ -n "$status" ]] && echo " (${status%·})" || echo ""
+  [[ -n "$status" ]] && echo " (${status%·})" || echo ""
 }
 
 # -----------------------------------------------------------------------------
@@ -107,39 +107,44 @@ session_cost=${session_cost:-0}
 # -----------------------------------------------------------------------------
 
 if [[ "$cache_creation" -eq 0 && "$cache_read" -eq 0 ]]; then
-    if [[ -f "$OUTPUT_CACHE" ]]; then
-        (
-            flock -s 200
-            entry=$(jq -r --arg sid "$session_id" '.[$sid] // empty' "$OUTPUT_CACHE" 2>/dev/null)
-            if [[ -n "$entry" ]]; then
-                ts=$(echo "$entry" | jq -r '.ts // 0')
-                if (( NOW - ts < TTL )); then
-                    echo -e "$(echo "$entry" | jq -r '.out')"
-                fi
-            fi
-        ) 200>"$LOCK_FILE"
-    fi
-    exit 0
+  if [[ -f "$OUTPUT_CACHE" ]]; then
+    (
+      flock -s 200
+      entry=$(jq -r --arg sid "$session_id" '.[$sid] // empty' "$OUTPUT_CACHE" 2>/dev/null)
+      if [[ -n "$entry" ]]; then
+        ts=$(echo "$entry" | jq -r '.ts // 0')
+        if (( NOW - ts < TTL )); then
+          echo -e "$(echo "$entry" | jq -r '.out')"
+        fi
+      fi
+    ) 200>"$LOCK_FILE"
+  fi
+  exit 0
 fi
 
 # -----------------------------------------------------------------------------
 # Calculate Context Usage
 # -----------------------------------------------------------------------------
 
+# Autocompact buffer formula extracted from Claude Code v2.1.63:
+#   buffer = min(maxOutputTokens, 20000) + 13000
+# where maxOutputTokens = CLAUDE_CODE_MAX_OUTPUT_TOKENS or model default
 auto_compact=$(jq -r '.autoCompactEnabled // true' ~/.claude.json 2>/dev/null)
 if [[ "$auto_compact" == "false" ]]; then
-    compact_buffer=0
+  compact_buffer=0
 else
-    compact_buffer=$((context_window_size * 165 / 1000))
+  max_output=${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-32000}
+  capped_output=$((max_output < 20000 ? max_output : 20000))
+  compact_buffer=$((capped_output + 13000))
 fi
 
 used_context=$((cache_creation + cache_read))
 total_context=$((used_context + compact_buffer))
 
 if [[ "$context_window_size" -gt 0 ]]; then
-    context_percent=$((total_context * 100 / context_window_size))
+  context_percent=$((total_context * 100 / context_window_size))
 else
-    context_percent=0
+  context_percent=0
 fi
 
 # -----------------------------------------------------------------------------
@@ -150,9 +155,9 @@ filled_bars=$((context_percent * BAR_WIDTH / 100))
 [[ "$filled_bars" -gt "$BAR_WIDTH" ]] && filled_bars=$BAR_WIDTH
 
 if [[ "$total_context" -gt 0 ]]; then
-    compact_bars=$((compact_buffer * filled_bars / total_context))
+  compact_bars=$((compact_buffer * filled_bars / total_context))
 else
-    compact_bars=0
+  compact_bars=0
 fi
 [[ "$compact_bars" -lt 1 && "$compact_buffer" -gt 0 && "$filled_bars" -gt 0 ]] && compact_bars=1
 [[ "$compact_bars" -gt "$filled_bars" ]] && compact_bars=$filled_bars
@@ -189,15 +194,15 @@ output="🤖 ${model} ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(
 # -----------------------------------------------------------------------------
 
 (
-    flock -x 200
-    if [[ -f "$OUTPUT_CACHE" ]]; then
-        jq --arg sid "$session_id" --arg out "$output" --argjson ts "$NOW" --argjson ttl "$TTL" \
-            'to_entries | map(select(.value.ts > ($ts - $ttl))) | from_entries | .[$sid] = {out: $out, ts: $ts}' \
-            "$OUTPUT_CACHE" > "${OUTPUT_CACHE}.tmp" && mv "${OUTPUT_CACHE}.tmp" "$OUTPUT_CACHE"
-    else
-        jq -n --arg sid "$session_id" --arg out "$output" --argjson ts "$NOW" \
-            '{($sid): {out: $out, ts: $ts}}' > "$OUTPUT_CACHE"
-    fi
+  flock -x 200
+  if [[ -f "$OUTPUT_CACHE" ]]; then
+    jq --arg sid "$session_id" --arg out "$output" --argjson ts "$NOW" --argjson ttl "$TTL" \
+      'to_entries | map(select(.value.ts > ($ts - $ttl))) | from_entries | .[$sid] = {out: $out, ts: $ts}' \
+      "$OUTPUT_CACHE" > "${OUTPUT_CACHE}.tmp" && mv "${OUTPUT_CACHE}.tmp" "$OUTPUT_CACHE"
+  else
+    jq -n --arg sid "$session_id" --arg out "$output" --argjson ts "$NOW" \
+      '{($sid): {out: $out, ts: $ts}}' > "$OUTPUT_CACHE"
+  fi
 ) 200>"$LOCK_FILE"
 
 echo -e "$output"
