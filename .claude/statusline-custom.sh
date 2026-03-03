@@ -84,12 +84,14 @@ build_git_status() {
 input=$(cat)
 NOW=$(date +%s)
 
-model=$(echo "$input" | jq -r '.model.display_name // "Sonnet 4"' 2>/dev/null)
-session_id=$(echo "$input" | jq -r '.session_id // "unknown"' 2>/dev/null)
-context_window_size=$(echo "$input" | jq -r '.context_window.context_window_size // 200000' 2>/dev/null)
-cache_creation=$(echo "$input" | jq -r '.context_window.current_usage.cache_creation_input_tokens // 0' 2>/dev/null)
-cache_read=$(echo "$input" | jq -r '.context_window.current_usage.cache_read_input_tokens // 0' 2>/dev/null)
-session_cost=$(echo "$input" | jq -r '.cost.total_cost_usd // 0' 2>/dev/null)
+IFS=$'\t' read -r model context_window_size cache_creation cache_read session_cost <<< \
+  "$(echo "$input" | jq -r '[
+    (.model.display_name // "Sonnet 4"),
+    (.context_window.context_window_size // 200000),
+    (.context_window.current_usage.cache_creation_input_tokens // 0),
+    (.context_window.current_usage.cache_read_input_tokens // 0),
+    (.cost.total_cost_usd // 0)
+  ] | @tsv' 2>/dev/null)"
 
 # Ensure numeric values
 cache_creation=${cache_creation:-0}
