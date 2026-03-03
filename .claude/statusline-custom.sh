@@ -20,11 +20,6 @@ DIM='\033[2m'
 NORMAL='\033[22m'
 RESET='\033[0m'
 
-# Cache settings
-OUTPUT_CACHE="/tmp/claude-statusline-cache.json"
-LOCK_FILE="/tmp/claude-statusline-cache.lock"
-TTL=$((7 * 24 * 60 * 60))  # 1 week
-
 # Bar settings
 BAR_WIDTH=10
 
@@ -102,25 +97,6 @@ cache_read=${cache_read:-0}
 context_window_size=${context_window_size:-200000}
 session_cost=${session_cost:-0}
 
-# -----------------------------------------------------------------------------
-# Cache: Return cached output if no new data
-# -----------------------------------------------------------------------------
-
-if [[ "$cache_creation" -eq 0 && "$cache_read" -eq 0 ]]; then
-  if [[ -f "$OUTPUT_CACHE" ]]; then
-    (
-      flock -s 200
-      entry=$(jq -r --arg sid "$session_id" '.[$sid] // empty' "$OUTPUT_CACHE" 2>/dev/null)
-      if [[ -n "$entry" ]]; then
-        ts=$(echo "$entry" | jq -r '.ts // 0')
-        if (( NOW - ts < TTL )); then
-          echo -e "$(echo "$entry" | jq -r '.out')"
-        fi
-      fi
-    ) 200>"$LOCK_FILE"
-  fi
-  exit 0
-fi
 
 # -----------------------------------------------------------------------------
 # Calculate Context Usage
@@ -188,21 +164,5 @@ formatted_tokens=$(format_tokens "$total_context")
 session_cost_fmt=$(printf "\$%.2f" "$session_cost")
 
 output="🤖 ${model} ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(${formatted_tokens})${NORMAL}${RESET} | 💰 ${session_cost_fmt} | 🌿 ${branch}${git_status}"
-
-# -----------------------------------------------------------------------------
-# Save to Cache
-# -----------------------------------------------------------------------------
-
-(
-  flock -x 200
-  if [[ -f "$OUTPUT_CACHE" ]]; then
-    jq --arg sid "$session_id" --arg out "$output" --argjson ts "$NOW" --argjson ttl "$TTL" \
-      'to_entries | map(select(.value.ts > ($ts - $ttl))) | from_entries | .[$sid] = {out: $out, ts: $ts}' \
-      "$OUTPUT_CACHE" > "${OUTPUT_CACHE}.tmp" && mv "${OUTPUT_CACHE}.tmp" "$OUTPUT_CACHE"
-  else
-    jq -n --arg sid "$session_id" --arg out "$output" --argjson ts "$NOW" \
-      '{($sid): {out: $out, ts: $ts}}' > "$OUTPUT_CACHE"
-  fi
-) 200>"$LOCK_FILE"
 
 echo -e "$output"
