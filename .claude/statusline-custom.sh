@@ -130,7 +130,7 @@ auto_compact=$(jq -r '.autoCompactEnabled // true' ~/.claude.json 2>/dev/null)
 if [[ "$auto_compact" == "false" ]]; then
     compact_buffer=0
 else
-    compact_buffer=$((context_window_size * 225 / 1000))
+    compact_buffer=$((context_window_size * 165 / 1000))
 fi
 
 used_context=$((cache_creation + cache_read))
