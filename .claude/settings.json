@@ -11,6 +11,7 @@
     "command": "bash ~/.claude/statusline-custom.sh",
     "padding": 0
   },
+  "effortLevel": "max",
   "alwaysThinkingEnabled": true,
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",
