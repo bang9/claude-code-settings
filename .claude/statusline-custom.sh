@@ -20,6 +20,10 @@ DIM='\033[2m'
 NORMAL='\033[22m'
 RESET='\033[0m'
 
+# Debug mode: set STATUSLINE_DEBUG=1 to enable logging
+STATUSLINE_DEBUG=${STATUSLINE_DEBUG:-0}
+STATUSLINE_LOG="$HOME/.claude/statusline-debug.log"
+
 # Bar settings
 BAR_WIDTH=10
 
@@ -50,13 +54,11 @@ get_context_color() {
 }
 
 build_progress_bar() {
-  local compact_bars=$1
-  local used_bars=$2
-  local free_bars=$3
-  local context_color=$4
+  local used_bars=$1
+  local free_bars=$2
+  local context_color=$3
 
   local bar=""
-  [[ "$compact_bars" -gt 0 ]] && bar+="${MAGENTA}$(printf '█%.0s' $(seq 1 $compact_bars))${RESET}"
   [[ "$used_bars" -gt 0 ]] && bar+="${context_color}$(printf '█%.0s' $(seq 1 $used_bars))${RESET}"
   [[ "$free_bars" -gt 0 ]] && bar+="${DIM}${context_color}$(printf '░%.0s' $(seq 1 $free_bars))${NORMAL}${RESET}"
   echo "$bar"
@@ -84,67 +86,55 @@ build_git_status() {
 input=$(cat)
 NOW=$(date +%s)
 
-IFS=$'\t' read -r model context_window_size cache_creation cache_read session_cost <<< \
+# Debug: dump raw JSON input
+if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
+  {
+    echo "=== $(date '+%Y-%m-%d %H:%M:%S') ==="
+    echo "--- RAW JSON ---"
+    echo "$input" | jq '.' 2>/dev/null || echo "$input"
+    echo "--- CONTEXT_WINDOW FIELDS ---"
+    echo "$input" | jq '.context_window' 2>/dev/null
+  } >> "$STATUSLINE_LOG"
+fi
+
+IFS=$'\t' read -r model total_input_tokens context_window_size context_percent session_cost <<< \
   "$(echo "$input" | jq -r '[
     (.model.display_name // "Sonnet 4"),
+    (.context_window.total_input_tokens // 0),
     (.context_window.context_window_size // 200000),
-    (.context_window.current_usage.cache_creation_input_tokens // 0),
-    (.context_window.current_usage.cache_read_input_tokens // 0),
+    (.context_window.used_percentage // 0),
     (.cost.total_cost_usd // 0)
   ] | @tsv' 2>/dev/null)"
 
 # Ensure numeric values
-cache_creation=${cache_creation:-0}
-cache_read=${cache_read:-0}
+total_input_tokens=${total_input_tokens:-0}
 context_window_size=${context_window_size:-200000}
+context_percent=${context_percent:-0}
 session_cost=${session_cost:-0}
 
-
-# -----------------------------------------------------------------------------
-# Calculate Context Usage
-# -----------------------------------------------------------------------------
-
-# Autocompact buffer formula extracted from Claude Code v2.1.63:
-#   buffer = min(maxOutputTokens, 20000) + 13000
-# where maxOutputTokens = CLAUDE_CODE_MAX_OUTPUT_TOKENS or model default
-auto_compact=$(jq -r '.autoCompactEnabled // true' ~/.claude.json 2>/dev/null)
-if [[ "$auto_compact" == "false" ]]; then
-  compact_buffer=0
-else
-  max_output=${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-32000}
-  capped_output=$((max_output < 20000 ? max_output : 20000))
-  compact_buffer=$((capped_output + 13000))
-fi
-
-used_context=$((cache_creation + cache_read))
-total_context=$((used_context + compact_buffer))
-
-if [[ "$context_window_size" -gt 0 ]]; then
-  context_percent=$((total_context * 100 / context_window_size))
-else
-  context_percent=0
+# Debug: log values
+if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
+  {
+    echo "--- PARSED VALUES ---"
+    echo "model=$model"
+    echo "total_input_tokens=$total_input_tokens"
+    echo "context_window_size=$context_window_size"
+    echo "context_percent=$context_percent% (from API used_percentage)"
+    echo "session_cost=$session_cost"
+    echo ""
+  } >> "$STATUSLINE_LOG"
 fi
 
 # -----------------------------------------------------------------------------
 # Build Progress Bar
 # -----------------------------------------------------------------------------
 
-filled_bars=$((context_percent * BAR_WIDTH / 100))
+filled_bars=$(( (context_percent * BAR_WIDTH + 99) / 100 ))
 [[ "$filled_bars" -gt "$BAR_WIDTH" ]] && filled_bars=$BAR_WIDTH
-
-if [[ "$total_context" -gt 0 ]]; then
-  compact_bars=$((compact_buffer * filled_bars / total_context))
-else
-  compact_bars=0
-fi
-[[ "$compact_bars" -lt 1 && "$compact_buffer" -gt 0 && "$filled_bars" -gt 0 ]] && compact_bars=1
-[[ "$compact_bars" -gt "$filled_bars" ]] && compact_bars=$filled_bars
-
-used_bars=$((filled_bars - compact_bars))
 free_bars=$((BAR_WIDTH - filled_bars))
 
 context_color=$(get_context_color "$context_percent")
-bar=$(build_progress_bar "$compact_bars" "$used_bars" "$free_bars" "$context_color")
+bar=$(build_progress_bar "$filled_bars" "$free_bars" "$context_color")
 
 # -----------------------------------------------------------------------------
 # Build Git Info
@@ -162,7 +152,7 @@ git_status=$(build_git_status "$staged" "$modified" "$deleted" "$untracked")
 # Build Output
 # -----------------------------------------------------------------------------
 
-formatted_tokens=$(format_tokens "$total_context")
+formatted_tokens=$(format_tokens "$total_input_tokens")
 session_cost_fmt=$(printf "\$%.2f" "$session_cost")
 
 output="🤖 ${model} ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(${formatted_tokens})${NORMAL}${RESET} | 💰 ${session_cost_fmt} | 🌿 ${branch}${git_status}"
