@@ -10,21 +10,17 @@ set -o pipefail
 # Constants
 # -----------------------------------------------------------------------------
 
-# Colors
 GREEN='\033[1;32m'
 YELLOW='\033[1;93m'
 RED='\033[1;31m'
 BLUE='\033[1;34m'
-MAGENTA='\033[1;35m'
 DIM='\033[2m'
 NORMAL='\033[22m'
 RESET='\033[0m'
 
-# Debug mode: set STATUSLINE_DEBUG=1 to enable logging
 STATUSLINE_DEBUG=${STATUSLINE_DEBUG:-0}
 STATUSLINE_LOG="$HOME/.claude/statusline-debug.log"
 
-# Bar settings
 BAR_WIDTH=10
 
 # -----------------------------------------------------------------------------
@@ -84,43 +80,29 @@ build_git_status() {
 # -----------------------------------------------------------------------------
 
 input=$(cat)
-NOW=$(date +%s)
 
-# Debug: dump raw JSON input
 if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
   {
     echo "=== $(date '+%Y-%m-%d %H:%M:%S') ==="
-    echo "--- RAW JSON ---"
     echo "$input" | jq '.' 2>/dev/null || echo "$input"
-    echo "--- CONTEXT_WINDOW FIELDS ---"
-    echo "$input" | jq '.context_window' 2>/dev/null
   } >> "$STATUSLINE_LOG"
 fi
 
-IFS=$'\t' read -r model total_input_tokens context_window_size context_percent session_cost <<< \
+IFS=$'\t' read -r model total_input_tokens context_percent session_cost <<< \
   "$(echo "$input" | jq -r '[
     (.model.display_name // "Sonnet 4"),
     (.context_window.total_input_tokens // 0),
-    (.context_window.context_window_size // 200000),
     (.context_window.used_percentage // 0),
     (.cost.total_cost_usd // 0)
   ] | @tsv' 2>/dev/null)"
 
-# Ensure numeric values
 total_input_tokens=${total_input_tokens:-0}
-context_window_size=${context_window_size:-200000}
 context_percent=${context_percent:-0}
 session_cost=${session_cost:-0}
 
-# Debug: log values
 if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
   {
-    echo "--- PARSED VALUES ---"
-    echo "model=$model"
-    echo "total_input_tokens=$total_input_tokens"
-    echo "context_window_size=$context_window_size"
-    echo "context_percent=$context_percent% (from API used_percentage)"
-    echo "session_cost=$session_cost"
+    echo "--- model=$model tokens=$total_input_tokens used=$context_percent% cost=$session_cost ---"
     echo ""
   } >> "$STATUSLINE_LOG"
 fi
