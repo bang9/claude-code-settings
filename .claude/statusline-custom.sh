@@ -81,7 +81,7 @@ format_rate_limit() {
   local reset_fmt=""
 
   if [[ "$reset_ts" -gt 0 ]]; then
-    if [[ "$label" == "5h" ]]; then
+    if [[ "$label" == "[5h]" ]]; then
       reset_fmt=$(LC_TIME=en_US.UTF-8 date -r "$reset_ts" '+%-I:%M %p')
     else
       reset_fmt=$(LC_TIME=en_US.UTF-8 date -r "$reset_ts" '+%-m/%-d %-I:%M %p')
