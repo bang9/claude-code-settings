@@ -27,6 +27,19 @@ BAR_WIDTH=10
 # Helper Functions
 # -----------------------------------------------------------------------------
 
+# "Opus 4.6 (1M context)" -> "opus[1m]", "Sonnet 4" -> "sonnet"
+simplify_model_name() {
+  local raw=$1
+  local family ctx
+  family=$(echo "$raw" | sed -E 's/^(Claude )?([A-Za-z]+).*/\2/' | tr '[:upper:]' '[:lower:]')
+  ctx=$(echo "$raw" | grep -oE '\([0-9]+[KkMm]' | tr -d '(' | tr '[:upper:]' '[:lower:]')
+  if [[ -n "$ctx" ]]; then
+    echo "${family}[${ctx}]"
+  else
+    echo "$family"
+  fi
+}
+
 format_tokens() {
   local tokens=$1
   if [[ "$tokens" -ge 1000000 ]]; then
@@ -50,10 +63,7 @@ get_context_color() {
 }
 
 build_progress_bar() {
-  local used_bars=$1
-  local free_bars=$2
-  local color=$3
-
+  local used_bars=$1 free_bars=$2 color=$3
   local bar=""
   [[ "$used_bars" -gt 0 ]] && bar+="${color}$(printf '█%.0s' $(seq 1 $used_bars))${RESET}"
   [[ "$free_bars" -gt 0 ]] && bar+="${DIM}${color}$(printf '░%.0s' $(seq 1 $free_bars))${NORMAL}${RESET}"
@@ -62,34 +72,44 @@ build_progress_bar() {
 
 build_git_status() {
   local staged=$1 modified=$2 deleted=$3 untracked=$4
-
   local status=""
   [[ "$staged"    -gt 0 ]] && status+="${GREEN}${staged}${RESET}·"
   [[ "$modified"  -gt 0 ]] && status+="${YELLOW}${modified}${RESET}·"
   [[ "$deleted"   -gt 0 ]] && status+="${RED}${deleted}${RESET}·"
   [[ "$untracked" -gt 0 ]] && status+="${BLUE}${untracked}${RESET}·"
-
   [[ -n "$status" ]] && echo " (${status%·})" || echo ""
+}
+
+# Format remaining time: "4h32m left", "45m left"
+format_time_left() {
+  local reset_ts=$1
+  [[ "$reset_ts" -le 0 ]] && return
+
+  local diff=$(( reset_ts - $(date +%s) ))
+  [[ "$diff" -le 0 ]] && return
+
+  local hours=$(( diff / 3600 ))
+  local mins=$(( (diff % 3600) / 60 ))
+
+  if [[ "$hours" -gt 0 && "$mins" -gt 0 ]]; then
+    echo "${hours}h${mins}m left"
+  elif [[ "$hours" -gt 0 ]]; then
+    echo "${hours}h left"
+  else
+    echo "${mins}m left"
+  fi
 }
 
 format_rate_limit() {
   local pct=$1 reset_ts=$2 label=$3
-
   [[ "$pct" == "-1" || "$pct" == "null" ]] && return
 
   local remaining=$(( 100 - ${pct%.*} ))
-  local reset_fmt=""
+  local time_left
+  time_left=$(format_time_left "$reset_ts")
 
-  if [[ "$reset_ts" -gt 0 ]]; then
-    if [[ "$label" == "[5h]" ]]; then
-      reset_fmt=$(LC_TIME=en_US.UTF-8 date -r "$reset_ts" '+%-I:%M %p')
-    else
-      reset_fmt=$(LC_TIME=en_US.UTF-8 date -r "$reset_ts" '+%-m/%-d %-I:%M %p')
-    fi
-  fi
-
-  if [[ -n "$reset_fmt" ]]; then
-    printf "${label} %d%% ${DIM}(%s)${NORMAL}" "$remaining" "$reset_fmt"
+  if [[ -n "$time_left" ]]; then
+    printf "${label} %d%% ${DIM}(%s)${NORMAL}" "$remaining" "$time_left"
   else
     printf "${label} %d%%" "$remaining"
   fi
@@ -108,7 +128,7 @@ if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
   } >> "$STATUSLINE_LOG"
 fi
 
-IFS=$'\t' read -r model total_input_tokens context_percent session_cost \
+IFS=$'\t' read -r raw_model total_input_tokens context_percent session_cost \
   rl_5h_pct rl_5h_reset rl_7d_pct rl_7d_reset <<< \
   "$(echo "$input" | jq -r '[
     (.model.display_name // "Sonnet 4"),
@@ -121,36 +141,31 @@ IFS=$'\t' read -r model total_input_tokens context_percent session_cost \
     (.rate_limits.seven_day.resets_at // 0)
   ] | @tsv' 2>/dev/null)"
 
+model=$(simplify_model_name "$raw_model")
 total_input_tokens=${total_input_tokens:-0}
 context_percent=${context_percent:-0}
 session_cost=${session_cost:-0}
-rl_5h_pct=${rl_5h_pct:-"-1"}
+rl_5h_pct=${rl_5h_pct:--1}
 rl_5h_reset=${rl_5h_reset:-0}
-rl_7d_pct=${rl_7d_pct:-"-1"}
+rl_7d_pct=${rl_7d_pct:--1}
 rl_7d_reset=${rl_7d_reset:-0}
 
 if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
-  {
-    echo "--- model=$model tokens=$total_input_tokens used=$context_percent% cost=$session_cost ---"
-    echo ""
-  } >> "$STATUSLINE_LOG"
+  echo "--- model=$model tokens=$total_input_tokens used=$context_percent% cost=$session_cost ---" >> "$STATUSLINE_LOG"
 fi
 
 # -----------------------------------------------------------------------------
-# Context Window
+# Build Output
 # -----------------------------------------------------------------------------
 
+# Context bar
 filled_bars=$(( (context_percent * BAR_WIDTH + 99) / 100 ))
 [[ "$filled_bars" -gt "$BAR_WIDTH" ]] && filled_bars=$BAR_WIDTH
 free_bars=$((BAR_WIDTH - filled_bars))
-
 context_color=$(get_context_color "$context_percent")
 bar=$(build_progress_bar "$filled_bars" "$free_bars" "$context_color")
 
-# -----------------------------------------------------------------------------
-# Git Info
-# -----------------------------------------------------------------------------
-
+# Git
 branch=$(git branch --show-current 2>/dev/null || echo "no-git")
 staged=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
 modified=$(git diff --name-only --diff-filter=M 2>/dev/null | wc -l | tr -d ' ')
@@ -158,14 +173,10 @@ deleted=$(git diff --name-only --diff-filter=D 2>/dev/null | wc -l | tr -d ' ')
 untracked=$(git ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
 git_status=$(build_git_status "$staged" "$modified" "$deleted" "$untracked")
 
-# -----------------------------------------------------------------------------
-# Rate Limits
-# -----------------------------------------------------------------------------
-
+# Rate limits
 rate_info=""
-rl_5h=$(format_rate_limit "$rl_5h_pct" "$rl_5h_reset" "5h")
-rl_7d=$(format_rate_limit "$rl_7d_pct" "$rl_7d_reset" "7d")
-
+rl_5h=$(format_rate_limit "$rl_5h_pct" "$rl_5h_reset" "[5h]")
+rl_7d=$(format_rate_limit "$rl_7d_pct" "$rl_7d_reset" "[7d]")
 if [[ -n "$rl_5h" || -n "$rl_7d" ]]; then
   rate_info=" | ⏳ "
   [[ -n "$rl_5h" ]] && rate_info+="$rl_5h"
@@ -173,14 +184,11 @@ if [[ -n "$rl_5h" || -n "$rl_7d" ]]; then
   [[ -n "$rl_7d" ]] && rate_info+="$rl_7d"
 fi
 
-# -----------------------------------------------------------------------------
-# Output
-# -----------------------------------------------------------------------------
-
+# Assemble
 formatted_tokens=$(format_tokens "$total_input_tokens")
 session_cost_fmt=$(printf "\$%.2f" "$session_cost")
 
-output="🤖 ${model} ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(${formatted_tokens})${NORMAL}${RESET}"
+output="${model} ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(${formatted_tokens})${NORMAL}${RESET}"
 output+=" | 💰 ${session_cost_fmt}"
 output+=" | 🌿 ${branch}${git_status}"
 output+="${rate_info}"
