@@ -132,7 +132,7 @@ IFS=$'\t' read -r raw_model total_input_tokens context_percent session_cost \
   rl_5h_pct rl_5h_reset rl_7d_pct rl_7d_reset <<< \
   "$(echo "$input" | jq -r '[
     (.model.display_name // "Sonnet 4"),
-    (.context_window.total_input_tokens // 0),
+    ((.context_window.current_usage | (.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)) // 0),
     (.context_window.used_percentage // 0),
     (.cost.total_cost_usd // 0),
     (.rate_limits.five_hour.used_percentage // -1),
@@ -142,8 +142,6 @@ IFS=$'\t' read -r raw_model total_input_tokens context_percent session_cost \
   ] | @tsv' 2>/dev/null)"
 
 model=$(simplify_model_name "$raw_model")
-total_input_tokens=${total_input_tokens:-0}
-context_percent=${context_percent:-0}
 session_cost=${session_cost:-0}
 rl_5h_pct=${rl_5h_pct:--1}
 rl_5h_reset=${rl_5h_reset:-0}
