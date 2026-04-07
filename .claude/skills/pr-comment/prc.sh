@@ -114,6 +114,11 @@ cmd_init() {
     }' > "$session_file"
 
   echo "Session created: $session_file"
+
+  # Auto-sync: pull existing pending review comments if any
+  if sync_result=$(_sync_pending_review "$session_file" 2>/dev/null); then
+    echo "Auto-synced: ${sync_result}"
+  fi
 }
 
 cmd_validate() {
@@ -154,6 +159,7 @@ cmd_validate() {
     (
       if (.value.id | type) != "number" or .value.id < 1 then "\($idx) id must be positive integer\n" else "" end +
       if (.value.file | type) != "string" or .value.file == "" then "\($idx) file is required\n" else "" end +
+      if (.value.start_line != null and (.value.start_line | type) != "number") then "\($idx) start_line must be null or number\n" else "" end +
       if (.value.line | type) != "number" then "\($idx) line must be a number\n" else "" end +
       if (.value.body | type) != "string" or .value.body == "" then "\($idx) body is required\n" else "" end +
       if (.value.status | IN("draft","pending","submitted") | not) then "\($idx) status must be draft|pending|submitted\n" else "" end +
@@ -178,11 +184,12 @@ cmd_validate() {
 }
 
 cmd_add() {
-  local file="" line="" body=""
+  local file="" start_line="" line="" body=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --file) file="$2"; shift 2 ;;
+      --start-line) start_line="$2"; shift 2 ;;
       --line) line="$2"; shift 2 ;;
       --body) body="$2"; shift 2 ;;
       *) die "add: unknown option: $1" ;;
@@ -206,15 +213,20 @@ cmd_add() {
   local new_id
   new_id=$(next_comment_id "$session")
 
+  local sl_arg="null"
+  [[ -n "$start_line" ]] && sl_arg="$start_line"
+
   local tmp
   tmp=$(mktemp)
   jq --argjson id "$new_id" \
      --arg file "$file" \
+     --argjson sl "$sl_arg" \
      --argjson line "$line" \
      --arg body "$body" \
      '.comments += [{
        id: $id,
        file: $file,
+       start_line: $sl,
        line: $line,
        body: $body,
        status: "draft",
@@ -223,7 +235,9 @@ cmd_add() {
   mv "$tmp" "$session"
 
   cmd_validate "$session" >/dev/null
-  echo "Comment #${new_id} added (${file}:${line})"
+  local line_display="${file}:${line}"
+  [[ "$sl_arg" != "null" ]] && line_display="${file}:${start_line}-${line}"
+  echo "Comment #${new_id} added (${line_display})"
 }
 
 cmd_update() {
@@ -231,17 +245,18 @@ cmd_update() {
   [[ -n "$comment_id" ]] || die "update: comment ID required"
   shift
 
-  local file="" line="" body=""
+  local file="" start_line="" line="" body=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --file) file="$2"; shift 2 ;;
+      --start-line) start_line="$2"; shift 2 ;;
       --line) line="$2"; shift 2 ;;
       --body) body="$2"; shift 2 ;;
       *) die "update: unknown option: $1" ;;
     esac
   done
 
-  [[ -n "$file" || -n "$line" || -n "$body" ]] || die "update: at least one of --file, --line, --body required"
+  [[ -n "$file" || -n "$start_line" || -n "$line" || -n "$body" ]] || die "update: at least one of --file, --start-line, --line, --body required"
 
   local session
   session=$(ensure_session)
@@ -261,6 +276,10 @@ cmd_update() {
   if [[ -n "$file" ]]; then
     jq_updates="${jq_updates} .file = \$file |"
     jq_args+=(--arg file "$file")
+  fi
+  if [[ -n "$start_line" ]]; then
+    jq_updates="${jq_updates} .start_line = \$sl |"
+    jq_args+=(--argjson sl "$start_line")
   fi
   if [[ -n "$line" ]]; then
     jq_updates="${jq_updates} .line = \$line |"
@@ -342,13 +361,15 @@ cmd_list() {
     return 0
   fi
 
-  printf "%-4s %-8s %-30s %-6s %s\n" "ID" "STATUS" "FILE" "LINE" "BODY"
-  printf "%-4s %-8s %-30s %-6s %s\n" "---" "------" "----" "----" "----"
-  jq -r '.comments[] | [.id, .status, .file, .line, .body] | @tsv' "$session" | \
-    while IFS=$'\t' read -r id status file line body; do
-      local short_body="${body:0:60}"
-      [[ ${#body} -gt 60 ]] && short_body="${short_body}..."
-      printf "%-4s %-8s %-30s %-6s %s\n" "$id" "$status" "$file" "$line" "$short_body"
+  printf "%-4s %-8s %-30s %-10s %s\n" "ID" "STATUS" "FILE" "LINE" "BODY"
+  printf "%-4s %-8s %-30s %-10s %s\n" "---" "------" "----" "----" "----"
+  jq -r '.comments[] | [.id, .status, .file, (.start_line // ""), .line, .body] | @tsv' "$session" | \
+    while IFS=$'\t' read -r id status file start_line line body; do
+      local short_body="${body:0:50}"
+      [[ ${#body} -gt 50 ]] && short_body="${short_body}..."
+      local line_display="$line"
+      [[ -n "$start_line" ]] && line_display="${start_line}-${line}"
+      printf "%-4s %-8s %-30s %-10s %s\n" "$id" "$status" "$file" "$line_display" "$short_body"
     done
 }
 
@@ -446,20 +467,28 @@ submit_draft() {
   draft_ids=$(jq -r '.comments[] | select(.status == "draft") | .id' "$session")
 
   for cid in $draft_ids; do
-    local file line body
+    local file start_line line body
     file=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .file' "$session")
+    start_line=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .start_line // empty' "$session")
     line=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .line' "$session")
     body=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .body' "$session")
 
+    local api_args=(
+      "repos/${owner}/${repo}/pulls/${pr_number}/comments"
+      --method POST
+      -f body="$body"
+      -f path="$file"
+      -F line="$line"
+      -f side="RIGHT"
+      -f commit_id="$commit_id"
+      -F pull_review_id="$review_id"
+    )
+    if [[ -n "$start_line" ]]; then
+      api_args+=(-F start_line="$start_line" -f start_side="RIGHT")
+    fi
+
     local response
-    response=$(gh api "repos/${owner}/${repo}/pulls/${pr_number}/comments" \
-      --method POST \
-      -f body="$body" \
-      -f path="$file" \
-      -F line="$line" \
-      -f side="RIGHT" \
-      -f commit_id="$commit_id" \
-      -F pull_review_id="$review_id" 2>&1) || die_api "failed to add comment #${cid}: $response"
+    response=$(gh api "${api_args[@]}" 2>&1) || die_api "failed to add comment #${cid}: $response"
 
     local gh_comment_id
     gh_comment_id=$(echo "$response" | jq -r '.id')
@@ -534,16 +563,104 @@ submit_final() {
   echo "Review submitted (${event}) on ${owner}/${repo}#${pr_number}"
 }
 
+# Core sync logic. Upserts remote pending review comments into a session.
+# Returns 0 on success with summary on stdout, 1 if no pending review found.
+_sync_pending_review() {
+  local session="$1"
+  local owner repo pr_number
+  owner=$(jq -r '.pr.owner' "$session")
+  repo=$(jq -r '.pr.repo' "$session")
+  pr_number=$(jq -r '.pr.number' "$session")
+
+  local gh_user
+  gh_user=$(gh api user --jq '.login' 2>/dev/null) || return 1
+
+  local reviews
+  reviews=$(gh api "repos/${owner}/${repo}/pulls/${pr_number}/reviews" 2>/dev/null) || return 1
+
+  local pending_review
+  pending_review=$(echo "$reviews" | jq --arg user "$gh_user" '
+    [.[] | select(.state == "PENDING" and .user.login == $user)] | last
+  ')
+  [[ "$pending_review" != "null" && -n "$pending_review" ]] || return 1
+
+  local review_id
+  review_id=$(echo "$pending_review" | jq -r '.id')
+
+  local remote_comments
+  remote_comments=$(gh api "repos/${owner}/${repo}/pulls/${pr_number}/reviews/${review_id}/comments" 2>/dev/null) || return 1
+
+  # Set review ID
+  local tmp
+  tmp=$(mktemp)
+  jq --argjson rid "$review_id" '.review.id = $rid' "$session" > "$tmp"
+  mv "$tmp" "$session"
+
+  local remote_count added=0 updated=0
+  remote_count=$(echo "$remote_comments" | jq 'length')
+
+  for i in $(seq 0 $((remote_count - 1))); do
+    local gh_comment_id file start_line line body
+    gh_comment_id=$(echo "$remote_comments" | jq -r ".[$i].id")
+    file=$(echo "$remote_comments" | jq -r ".[$i].path")
+    start_line=$(echo "$remote_comments" | jq ".[$i].start_line")
+    line=$(echo "$remote_comments" | jq -r ".[$i].line // .[$i].original_line // 0")
+    body=$(echo "$remote_comments" | jq -r ".[$i].body")
+
+    local exists
+    exists=$(jq --argjson ghid "$gh_comment_id" '[.comments[] | select(.github_comment_id == $ghid)] | length' "$session")
+
+    tmp=$(mktemp)
+    if [[ "$exists" -gt 0 ]]; then
+      jq --argjson ghid "$gh_comment_id" --arg file "$file" --argjson sl "$start_line" \
+         --argjson line "$line" --arg body "$body" \
+         '.comments = [.comments[] | if .github_comment_id == $ghid then .file = $file | .start_line = $sl | .line = $line | .body = $body else . end]' \
+         "$session" > "$tmp"
+      mv "$tmp" "$session"
+      updated=$((updated + 1))
+    else
+      local new_id
+      new_id=$(next_comment_id "$session")
+      jq --argjson id "$new_id" --arg file "$file" --argjson sl "$start_line" --argjson line "$line" \
+         --arg body "$body" --argjson ghid "$gh_comment_id" \
+         '.comments += [{ id: $id, file: $file, start_line: $sl, line: $line, body: $body, status: "pending", github_comment_id: $ghid }]' \
+         "$session" > "$tmp"
+      mv "$tmp" "$session"
+      added=$((added + 1))
+    fi
+  done
+
+  echo "${added} added, ${updated} updated (${remote_count} remote, review #${review_id})"
+}
+
+cmd_sync() {
+  local session
+  session=$(find_active_session)
+
+  if [[ -z "$session" ]]; then
+    # No session — init first, which auto-syncs
+    cmd_init
+    return
+  fi
+
+  local result
+  result=$(_sync_pending_review "$session") || die "no pending review found"
+  cmd_validate "$session" >/dev/null
+  echo "Synced: ${result}"
+  echo "Session: ${session}"
+}
+
 usage() {
   cat <<'EOF'
 Usage: prc.sh <command> [options]
 
 Commands:
   init                              Create new review session (auto-detects PR)
+  sync                              Sync pending review comments from GitHub to local
   status                            Show current session state
   validate                          Validate session JSON schema
-  add --file <path> --line <n> --body <text>   Add comment
-  update <id> [--file <path>] [--line <n>] [--body <text>]   Update comment
+  add --file <path> [--start-line <n>] --line <n> --body <text>   Add comment
+  update <id> [--file] [--start-line] [--line] [--body]   Update comment
   delete <id>                       Delete comment
   list                              List comments
   submit --draft                    Submit draft comments as GitHub pending review
@@ -557,6 +674,7 @@ main() {
 
   case "$action" in
     init)     cmd_init "$@" ;;
+    sync)     cmd_sync "$@" ;;
     status)   cmd_status "$@" ;;
     validate) cmd_validate "$@" ;;
     add)      cmd_add "$@" ;;
