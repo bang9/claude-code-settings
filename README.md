@@ -39,3 +39,12 @@ Review current branch changes with a team of specialized reviewers (security, pe
 - Reviewing current branch or PR before merging
 - Getting feedback on code changes from multiple perspectives
 - Ensuring code quality across security, performance, and test coverage
+
+### [pr-comment](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/pr-comment/SKILL.md)
+
+Manage PR review comments through natural conversation and submit them to GitHub.
+
+**When to use:**
+- Reviewing a PR and want to collect comments during discussion
+- Submitting review comments as a batch (draft or final)
+- Managing pending review comments before final submission
