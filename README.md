@@ -40,11 +40,29 @@ Review current branch changes with a team of specialized reviewers (security, pe
 - Getting feedback on code changes from multiple perspectives
 - Ensuring code quality across security, performance, and test coverage
 
-### [pr-comment](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/pr-comment/SKILL.md)
+### [pr-author](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/pr-author/SKILL.md)
 
-Manage PR review comments through natural conversation and submit them to GitHub.
+Handle your own PR workflow: create a pull request or respond to review feedback.
 
 **When to use:**
-- Reviewing a PR and want to collect comments during discussion
-- Submitting review comments as a batch (draft or final)
-- Managing pending review comments before final submission
+- Creating a well-structured PR from the current branch
+- Triage and respond to unresolved review threads on your own PR
+- Verify fixes and request re-review after addressing feedback
+
+### [pr-reviewer](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/pr-reviewer/SKILL.md)
+
+Review someone else's PR across the full lifecycle: digest the change, write review comments, and verify follow-up fixes.
+
+**When to use:**
+- Build a mental model of a PR before starting review
+- Leave structured review comments and manage pending feedback
+- Re-review author follow-up changes and resolve verified threads
+
+### [simulate](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/simulate/SKILL.md)
+
+Run multi-agent simulations to measure consistency of non-deterministic behavior.
+
+**When to use:**
+- A/B test prompts, workflows, or agent instructions
+- Validate behavioral equivalence across repeated runs
+- Stress-test outputs at scale and analyze divergence patterns
