@@ -1,6 +1,7 @@
 const STYLE_ID = 'pr-reviewer-digest-style';
 const HIGHLIGHT_STYLE_ID = 'pr-reviewer-digest-highlight-style';
 const HIGHLIGHT_SCRIPT_ID = 'pr-reviewer-digest-highlight-script';
+let heartbeatTimerId = null;
 
 const STYLES = `
   :root {
@@ -723,8 +724,28 @@ function codeBlock(diff) {
   return wrapper;
 }
 
+export function stopHeartbeat() {
+  if (heartbeatTimerId === null) {
+    return;
+  }
+  clearInterval(heartbeatTimerId);
+  heartbeatTimerId = null;
+}
+
+export function startHeartbeat() {
+  if (heartbeatTimerId !== null) {
+    return () => stopHeartbeat();
+  }
+  fetch('/heartbeat').catch(() => {});
+  heartbeatTimerId = window.setInterval(() => {
+    fetch('/heartbeat').catch(() => {});
+  }, 5000);
+  return () => stopHeartbeat();
+}
+
 export async function mount({ root, data, submit }) {
   await ensureDigestAssets();
+  const stopDigestHeartbeat = startHeartbeat();
 
   const highlights = Array.isArray(data.highlights) ? data.highlights : [];
   const sections = Array.isArray(data.sections) ? data.sections : [];
@@ -807,6 +828,7 @@ export async function mount({ root, data, submit }) {
   submitSection.className = 'digest-submit';
   submitSection.appendChild(
     button(data.submit_label || UI_COPY.done, () => {
+      stopDigestHeartbeat();
       submit({ acknowledged: true });
     }),
   );
