@@ -13,6 +13,7 @@
     "padding": 0
   },
   "effortLevel": "max",
+  "skipDangerousModePermissionPrompt": true,
   "alwaysThinkingEnabled": true,
   "promptSuggestionEnabled": false,
   "autoUpdatesChannel": "latest",
