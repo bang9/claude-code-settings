@@ -441,66 +441,101 @@ submit_draft() {
   draft_count=$(jq '[.comments[] | select(.status == "draft")] | length' "$session")
   [[ "$draft_count" -gt 0 ]] || die "no draft comments to submit"
 
-  # Get or create pending review
-  local review_id
-  review_id=$(jq -r '.review.id' "$session")
+  # GitHub has no supported API to add comments to an existing pending review;
+  # the documented path is to include all comments inline when the review is
+  # created. If a pending review already exists for this session, sync remote
+  # state into local first (to preserve any out-of-band edits the reviewer
+  # made via the GitHub UI), then delete the review and roll previously-
+  # pending comments back to draft so they get included in the fresh review.
+  local existing_review_id
+  existing_review_id=$(jq -r '.review.id' "$session")
+  if [[ "$existing_review_id" != "null" ]]; then
+    # Pull remote edits/additions into local state. Without this step any
+    # changes made on GitHub (edited body, added comments) would be silently
+    # overwritten when we DELETE and recreate from local state.
+    _sync_pending_review "$session" >/dev/null 2>&1 \
+      || die "session has review.id=${existing_review_id} but no matching pending review on GitHub. run 'prc.sh sync' manually to reconcile"
 
-  if [[ "$review_id" == "null" ]]; then
-    # Create new pending review (no event = PENDING state)
-    local review_response
-    review_response=$(gh api "repos/${owner}/${repo}/pulls/${pr_number}/reviews" \
-      --method POST -f body="" 2>&1) || die_api "failed to create review: $review_response"
-    review_id=$(echo "$review_response" | jq -r '.id')
+    # sync may have corrected review.id if local was stale — re-read
+    existing_review_id=$(jq -r '.review.id' "$session")
+
+    gh api "repos/${owner}/${repo}/pulls/${pr_number}/reviews/${existing_review_id}" \
+      --method DELETE >/dev/null 2>&1 \
+      || die_api "failed to delete existing pending review ${existing_review_id}"
 
     local tmp
     tmp=$(mktemp)
-    jq --argjson rid "$review_id" '.review.id = $rid' "$session" > "$tmp"
+    jq '
+      .review.id = null |
+      .comments = [.comments[] |
+        if .status == "pending" then
+          .status = "draft" | .github_comment_id = null
+        else . end
+      ]
+    ' "$session" > "$tmp"
     mv "$tmp" "$session"
+
+    draft_count=$(jq '[.comments[] | select(.status == "draft")] | length' "$session")
   fi
 
   # Get latest commit SHA for the PR
   local commit_id
-  commit_id=$(gh api "repos/${owner}/${repo}/pulls/${pr_number}" --jq '.head.sha' 2>/dev/null) || die_api "failed to get PR head SHA"
+  commit_id=$(gh api "repos/${owner}/${repo}/pulls/${pr_number}" --jq '.head.sha' 2>/dev/null) \
+    || die_api "failed to get PR head SHA"
 
-  # Add each draft comment to the review
-  local draft_ids
-  draft_ids=$(jq -r '.comments[] | select(.status == "draft") | .id' "$session")
+  # Build single-call payload: { commit_id, comments[] } — event omitted → PENDING
+  local payload
+  payload=$(jq --arg commit_id "$commit_id" '{
+    commit_id: $commit_id,
+    comments: [.comments[] | select(.status == "draft") |
+      if .start_line != null then
+        { path: .file, start_line: .start_line, start_side: "RIGHT",
+          line: .line, side: "RIGHT", body: .body }
+      else
+        { path: .file, line: .line, side: "RIGHT", body: .body }
+      end
+    ]
+  }' "$session")
 
-  for cid in $draft_ids; do
-    local file start_line line body
-    file=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .file' "$session")
-    start_line=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .start_line // empty' "$session")
-    line=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .line' "$session")
-    body=$(jq -r --argjson id "$cid" '.comments[] | select(.id == $id) | .body' "$session")
+  # Atomic single-call: create PENDING review with all comments inline
+  local review_response
+  review_response=$(echo "$payload" | gh api \
+    "repos/${owner}/${repo}/pulls/${pr_number}/reviews" \
+    --method POST --input - 2>&1) \
+    || die_api "failed to create pending review: $review_response"
 
-    local api_args=(
-      "repos/${owner}/${repo}/pulls/${pr_number}/comments"
-      --method POST
-      -f body="$body"
-      -f path="$file"
-      -F line="$line"
-      -f side="RIGHT"
-      -f commit_id="$commit_id"
-      -F pull_review_id="$review_id"
-    )
-    if [[ -n "$start_line" ]]; then
-      api_args+=(-F start_line="$start_line" -f start_side="RIGHT")
-    fi
+  local review_id
+  review_id=$(echo "$review_response" | jq -r '.id')
 
-    local response
-    response=$(gh api "${api_args[@]}" 2>&1) || die_api "failed to add comment #${cid}: $response"
+  # Fetch review's comments so we can map remote IDs back to local draft entries.
+  # The review creation response does not include per-comment IDs.
+  local remote_comments
+  remote_comments=$(gh api \
+    "repos/${owner}/${repo}/pulls/${pr_number}/reviews/${review_id}/comments" 2>&1) \
+    || die_api "failed to fetch review comments: $remote_comments"
 
-    local gh_comment_id
-    gh_comment_id=$(echo "$response" | jq -r '.id')
-
-    # Update comment status in session
-    local tmp
-    tmp=$(mktemp)
-    jq --argjson cid "$cid" --argjson ghid "$gh_comment_id" \
-      '.comments = [.comments[] | if .id == $cid then .status = "pending" | .github_comment_id = $ghid else . end]' \
-      "$session" > "$tmp"
-    mv "$tmp" "$session"
-  done
+  # Update session: set review.id and transition draft → pending with github_comment_id.
+  # Matching key: (path, line, start_line, body) — unique in practical cases.
+  local tmp
+  tmp=$(mktemp)
+  jq --argjson rid "$review_id" --argjson rc "$remote_comments" '
+    .review.id = $rid |
+    .comments = [.comments[] |
+      if .status == "draft" then
+        . as $c |
+        ( $rc | map(select(
+            .path == $c.file
+            and ((.line // .original_line) == $c.line)
+            and ((.start_line // null) == $c.start_line)
+            and (.body == $c.body)
+          )) | first ) as $match |
+        if $match then
+          .status = "pending" | .github_comment_id = $match.id
+        else . end
+      else . end
+    ]
+  ' "$session" > "$tmp"
+  mv "$tmp" "$session"
 
   cmd_validate "$session" >/dev/null
   echo "${draft_count} comment(s) submitted as draft review (review #${review_id})"
@@ -524,18 +559,21 @@ submit_final() {
   owner=$(jq -r '.pr.owner' "$session")
   repo=$(jq -r '.pr.repo' "$session")
   pr_number=$(jq -r '.pr.number' "$session")
-  review_id=$(jq -r '.review.id' "$session")
   review_status=$(jq -r '.review.status' "$session")
 
-  [[ "$review_id" != "null" ]] || die "no pending review. run 'submit --draft' first"
   [[ "$review_status" == "draft" ]] || die "review already submitted"
 
-  # Submit any remaining draft comments first
+  # Submit any draft comments first. submit_draft will create a new pending
+  # review (or discard and recreate an existing one), so review.id may change.
   local draft_count
   draft_count=$(jq '[.comments[] | select(.status == "draft")] | length' "$session")
   if [[ "$draft_count" -gt 0 ]]; then
     submit_draft
   fi
+
+  # Re-read review_id after potential (re)creation by submit_draft
+  review_id=$(jq -r '.review.id' "$session")
+  [[ "$review_id" != "null" ]] || die "no pending review. run 'submit --draft' first"
 
   # Submit the review
   local api_args=(
