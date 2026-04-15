@@ -33,8 +33,6 @@ All prompt UI output for this skill MUST use a light theme unless the operator e
 gh pr view --json number,title,author,baseRefName,headRefName,url,body,additions,deletions,changedFiles
 ```
 
-No PR → stop: "No open PR found for the current branch. Switch to a branch with an open PR and try again."
-
 If the operator provides a specific PR reference (`owner/repo#123` or URL), use `gh pr view <number> --repo <owner>/<repo>`.
 
 For org repos, respect CLAUDE.md GH_TOKEN override guidance.

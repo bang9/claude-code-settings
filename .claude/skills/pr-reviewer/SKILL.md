@@ -16,6 +16,14 @@ Determine the sub-command from args or conversation context:
 | `followup`, "반영 확인", "follow-up", "re-review", checking author's fixes | **followup** | Read and follow `followup/index.md` |
 | (no arg, ambiguous) | Ask the operator which phase they're in |
 
+## Auto-Detection
+
+Before dispatching to any sub-command, confirm a PR is attached to the current branch:
+
+1. `gh pr view --json number,state 2>/dev/null`
+2. PR exists → proceed with routing
+3. No PR → stop: "No open PR found for the current branch."
+
 ## Workflow Sequence
 
 The three sub-commands map to the natural reviewer lifecycle:

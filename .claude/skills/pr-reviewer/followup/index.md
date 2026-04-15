@@ -40,7 +40,7 @@ If `LOCAL != REMOTE`:
 gh pr view --json number,title,author,baseRefName,headRefName,url
 ```
 
-No PR → stop. Store: `pr_number`, `title`, `author`, `base_branch`, `head_branch`, `url`, `owner`, `repo`.
+Store: `pr_number`, `title`, `author`, `base_branch`, `head_branch`, `url`, `owner`, `repo`.
 
 For org repos, respect CLAUDE.md GH_TOKEN override guidance.
 
@@ -243,7 +243,6 @@ All resolve/reply mutations dispatched in parallel where independent.
 
 ## Edge Cases
 
-- **No PR**: Stop with message
 - **No unresolved threads**: "All clear" and exit
 - **REVIEW_SHA not found**: Fall back to `git diff <base>...HEAD` with warning
 - **Outdated threads**: Include but badge as outdated. If code moved past the reviewed line and concern no longer applies, auto-resolve
