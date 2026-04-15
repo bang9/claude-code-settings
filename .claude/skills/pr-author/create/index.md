@@ -47,28 +47,37 @@ If the branch name contains an issue reference (e.g., `feat/PROJ-123-*`), extrac
 
 ### Body
 
+If a PR template exists under `.github/` (e.g., `.github/pull_request_template.md`), use it as the body skeleton and fill the sections from collected context. Otherwise use the default structure below.
+
 ```markdown
+## Context
+<!-- Links a reviewer (human or AI) needs to judge intent.
+     Delete lines that don't apply. -->
+- Ticket: <Linear/Jira URL or key>
+- Design: <Figma URL>
+- Spec: <Confluence / Notion / GDoc URL>
+- Related: <#PR, prior ADR, discussion link>
+
 ## Summary
+<!-- Organize as bullet lists (not dense prose). Readable in under a minute.
 
-<3-5 bullet points explaining what this PR does and why>
+     Formatting rules:
+     - One idea per bullet. Keep bullets concise.
+     - Use nested bullets for concrete enumerations (files, axes, edge cases).
+     - Group related bullets under `### sub-headings` when it aids navigation.
+     - Don't stack multiple parenthetical refs in one line.
 
-## Changes
-
-<brief description of key changes, grouped by area if needed>
-
-## Related Issues
-
-<linked issues if any — use "Fixes #N" or "Relates to #N">
-
-## Test Plan
-
-<how to verify the changes — checklist format>
+     Cover the points below:
+     - What is this PR really doing?
+     - Which surfaces changed?
+     - How does the new end-to-end flow work?
+     - Which exact hunks matter most?
+     - What is still ambiguous from code alone? -->
 ```
 
 Rules:
-- Summary focuses on **why**, not just what
-- Each bullet should be independently understandable
-- Include test plan even if minimal ("existing tests pass")
+- Keep the HTML comments in place — they guide reviewers reading the raw body and future operators editing it
+- Delete `Context` lines that don't apply; don't leave placeholder URLs
 - Do not include implementation details that are obvious from the diff
 
 ## Phase 4: Operator Review
