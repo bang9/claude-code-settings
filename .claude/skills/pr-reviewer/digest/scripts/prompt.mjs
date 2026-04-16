@@ -113,8 +113,8 @@ export function buildHostHTML() {
     mount({
       root,
       data,
-      submit: async (values) => {
-        await postResult({ status: 'submitted', data: values });
+      submit: (values) => {
+        postResult({ status: 'submitted', data: values });
         window.close();
       },
       cancel: () => postResult({ status: 'cancelled' }),
