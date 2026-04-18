@@ -1,20 +1,17 @@
-# Commit Command
+# /commit
 
-**Purpose**: Generate clean, one-line commit messages following Conventional Commits specification
+Generate Conventional Commits message, commit only what's staged.
 
-**How it works**:
-1. Analyzes current git changes of $ARGUMENTS(staged, unstaged, untracked)
-2. Determines commit type based on file patterns
-3. Generates a concise commit message in format: `type: description`
+Always run in parallel: `git status --short`, `git log --oneline -10`.
 
-**Commit types**:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code formatting (no logic changes)
-- `refactor`: Code restructuring
-- `test`: Test additions or modifications
-- `chore`: Build process or tool changes
-- `ci`: CI/CD configuration changes
+Add `git diff` if ANY of:
+- conversation lacks recent change context
+- staged files not touched in this conversation
+- type unclear from paths
+- `$ARGUMENTS` contains `full`/`전체`/`자세히`
 
-This automates commit message creation while maintaining consistency across the project.
+`$ARGUMENTS` is a free-form hint — empty=auto; `full`/`전체`/`자세히`=force diff; free text=message/type hint (actual changes win on conflict).
+
+Output: `type[(scope)]: description` (single line). Scope only if `git log` majority uses it.
+
+Commit: HEREDOC, no auto-stage, no `Co-authored-by` trailer.
