@@ -12,6 +12,6 @@ Add `git diff` if ANY of:
 
 `$ARGUMENTS` is a free-form hint — empty=auto; `full`/`전체`/`자세히`=force diff; free text=message/type hint (actual changes win on conflict).
 
-Output: `type[(scope)]: description` (single line). Scope only if `git log` majority uses it.
+Output: single line only, `type[(scope)]: description`. No body, no multi-line. Scope only if `git log` majority uses it.
 
 Commit: HEREDOC, no auto-stage, no `Co-authored-by` trailer.
