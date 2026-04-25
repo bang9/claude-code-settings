@@ -186,9 +186,9 @@ fi
 formatted_tokens=$(format_tokens "$total_input_tokens")
 session_cost_fmt=$(printf "\$%.2f" "$session_cost")
 
-output="${model} ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(${formatted_tokens})${NORMAL}${RESET}"
-output+=" | 💰 ${session_cost_fmt}"
-output+=" | 🌿 ${branch}${git_status}"
+output="🌿 ${branch}${git_status}"
+output+=" | ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(${formatted_tokens})${NORMAL}${RESET}"
 output+="${rate_info}"
+output+=" | ${model} · 💰 ${session_cost_fmt}"
 
 echo -e "$output"
