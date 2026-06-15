@@ -24,21 +24,12 @@ Create a new git branch from the default branch based on current conversation co
 
 ### [problem-solver](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/problem-solver/SKILL.md)
 
-Structured workflow for debugging, bug fixes, and feature implementations.
+Tool for solving code problems via separate tracks for bug fixes, refactoring, and feature additions — each building on a verifiable foundation before changing code.
 
 **When to use:**
-- Bug investigation requiring root cause analysis
-- Feature implementation needing step-by-step verification
-- Complex issues where you want to avoid workaround solutions
-
-### [code-review](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/code-review/SKILL.md)
-
-Review current branch changes with a team of specialized reviewers (security, performance, test coverage).
-
-**When to use:**
-- Reviewing current branch or PR before merging
-- Getting feedback on code changes from multiple perspectives
-- Ensuring code quality across security, performance, and test coverage
+- Bug fixes requiring a reproduction and root cause analysis (not workarounds)
+- Refactoring existing code with a characterization-test safety net
+- Adding features on top of solidly tested existing behavior
 
 ### [pr-author](https://github.com/bang9/claude-code-settings/blob/main/.claude/skills/pr-author/SKILL.md)
 
