@@ -1,5 +1,5 @@
 ---
-description: Run multi-agent simulations to measure consistency of non-deterministic behavior. Use when the user wants to A/B test, validate behavioral equivalence, or stress-test outputs at scale.
+description: Use when the user wants to A/B test prompts or workflows, validate behavioral equivalence, or stress-test non-deterministic outputs at scale via repeated multi-agent runs.
 argument-hint: "<scenario> [--runs N]"
 allowed-tools: Agent, Bash, Read, Write, Edit, Glob, Grep
 ---
