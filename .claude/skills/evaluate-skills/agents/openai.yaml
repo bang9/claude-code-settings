@@ -1,0 +1,7 @@
+interface:
+  display_name: "Evaluate Skills"
+  short_description: "Audit a skill against the authoring rubric"
+policy:
+  # Human-invoked only. Mirrors `disable-model-invocation: true` in SKILL.md
+  # frontmatter (the Claude Code gate); this is the Codex-side equivalent.
+  allow_implicit_invocation: false
