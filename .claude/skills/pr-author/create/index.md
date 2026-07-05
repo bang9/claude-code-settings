@@ -17,12 +17,13 @@ git rev-parse --abbrev-ref HEAD
 ```
 
 - If on `main` or `master` → stop: "You're on the default branch. Create a feature branch first."
-- If no commits ahead of base → stop: "No commits ahead of the base branch. Nothing to create a PR for."
 
 Detect the base branch:
 ```bash
 gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name'
 ```
+
+- If no commits ahead of that base → stop: "No commits ahead of the base branch. Nothing to create a PR for."
 
 ## Phase 2: Context Collection
 

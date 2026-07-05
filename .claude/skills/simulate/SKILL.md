@@ -1,4 +1,5 @@
 ---
+name: simulate
 description: Use when the user wants to A/B test prompts or workflows, validate behavioral equivalence, or stress-test non-deterministic outputs at scale via repeated multi-agent runs.
 argument-hint: "<scenario> [--runs N]"
 allowed-tools: Agent, Bash, Read, Write, Edit, Glob, Grep
@@ -27,7 +28,7 @@ Read any files, git refs, or codebase artifacts referenced in the scenario, then
 
 The **output contract** is critical — all agents must produce the same structure so results are mechanically comparable:
 
-```
+~~~
 ### Result
 - pattern: [short label for the approach taken]
 - output:
@@ -35,7 +36,7 @@ The **output contract** is critical — all agents must produce the same structu
   [code block, JSON, or other structured output]
   ```
 - decisions: [key judgment calls made]
-```
+~~~
 
 For A/B comparisons, choose a bias strategy:
 
@@ -58,7 +59,7 @@ Agent prompt structure — every prompt must be **self-contained**:
 4. **Output contract**: The exact format to produce
 
 Batching:
-- ≤ 10 agents: spawn all at once with `run_in_background: true`
+- ≤ 10 agents: spawn all at once with `run_in_background: true`; wait for every agent to report completion before step 3
 - \> 10 agents: groups of 10, next batch after previous completes
 
 Use `model: sonnet` unless the scenario requires higher reasoning.
@@ -79,6 +80,14 @@ Classify outputs into patterns:
 ## Simulation Report
 
 ### Consistency: X/N (Y%)
+
+<!-- A/B runs: report per version, then compare -->
+### A vs B
+| Version | Dominant pattern | Consistency | Notable divergences |
+|---------|------------------|-------------|---------------------|
+| A       | ...              | X/N         | ...                 |
+| B       | ...              | X/N         | ...                 |
+Behavioral equivalence: [equivalent | diverges on ...]
 
 ### Output Patterns
 | Pattern | Count | Runs | Description |

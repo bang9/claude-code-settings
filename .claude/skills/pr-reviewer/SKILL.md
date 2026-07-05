@@ -1,6 +1,6 @@
 ---
 name: pr-reviewer
-description: PR reviewer workflow — digest a PR, write a review, or verify follow-up changes. Use when reviewing someone else's PR at any stage of the review lifecycle.
+description: Use when reviewing someone else's PR at any stage of the review lifecycle — digest a PR, write a review, or verify follow-up changes.
 ---
 
 # PR Reviewer

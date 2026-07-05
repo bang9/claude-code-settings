@@ -115,14 +115,16 @@ When the operator says "fix that one", "add more to it":
 | "submit as draft" | `./prc.sh submit --draft` |
 | "submit the review" | `./prc.sh submit` |
 
-### Comment quality
+### Comment writing
 
+- Write as suggestions ("Consider changing...", "It would be better to...") with rationale from the discussion, concisely
 - Reference specific file paths and line numbers
 - Explain the problem AND suggest a direction
-- Use concrete code snippets for API change proposals
 - Describe runtime behavior with step-by-step execution traces, not abstractions
+- Use concrete code snippets / markdown code blocks for API change proposals
 - Note cross-package impact (react/rn)
 - Distinguish severity: structural concern vs nit
+- Match the language of the conversation (Korean/English)
 
 ### Tracking table
 
@@ -176,19 +178,3 @@ Generate review summary for `--body`:
 ```
 
 Default event: `COMMENT`. Use `APPROVE` or `REQUEST_CHANGES` only when operator specifies.
-
-## Comment Writing Guide
-
-- Write as suggestions ("Consider changing...", "It would be better to...")
-- Include rationale from discussion concisely
-- Use markdown code blocks for code suggestions
-- Match the language of the conversation (Korean/English)
-
-## Key Rules
-
-- **Operator drives** — Claude investigates and discusses, never dictates focus
-- **No unprompted comments** — only add when explicitly requested
-- **Investigate before opining** — always read code first, trace the full picture
-- **Track everything** — show updated table after each comment
-- **Cross-platform awareness** — check counterpart when reviewing react/rn
-- **Discussion ≠ comment** — some discussions conclude without a comment

@@ -1,6 +1,6 @@
 interface:
   display_name: "Evaluate Skills"
-  short_description: "Audit a skill against the authoring rubric"
+  short_description: "Use when auditing or improving an agent skill package before it ships or is handed off"
 policy:
   # Human-invoked only. Mirrors `disable-model-invocation: true` in SKILL.md
   # frontmatter (the Claude Code gate); this is the Codex-side equivalent.

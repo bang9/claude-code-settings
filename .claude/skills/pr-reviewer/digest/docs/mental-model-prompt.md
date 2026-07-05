@@ -1,6 +1,6 @@
 # Mental Model Prompt
 
-Prompt template for the Phase 2A Codex research sessions. Replace `<placeholders>` with actual values.
+Prompt template for the Phase 2A mental-model subagents (spawned via the Agent tool). Replace `<placeholders>` with actual values.
 
 ```
 ## Context

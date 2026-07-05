@@ -9,7 +9,7 @@ Create a new branch off the default branch with a conventional-commit-style name
 
 ## Pre-condition: must be on the default branch
 
-1. Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'` (fall back to `main`/`master`).
+1. Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@'`. If empty, fall back to whichever of `main` or `master` exists as a local branch (`git branch --list`), preferring `main`.
 2. Get the current branch: `git branch --show-current`.
 3. If not on the default branch, tell the user and stop — never branch off a feature branch.
 
@@ -23,16 +23,7 @@ Create a new branch off the default branch with a conventional-commit-style name
 
 Format: `{type}/{short-kebab-description}`
 
-| Type | When |
-|------|------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `chore` | Maintenance, deps, CI, config |
-| `refactor` | Restructuring, no behavior change |
-| `docs` | Docs only |
-| `test` | Tests |
-| `perf` | Performance |
-| `ci` | CI/CD workflows |
+Type is one of the conventional-commit prefixes: `feat` `fix` `chore` `refactor` `docs` `test` `perf` `ci`.
 
 Rules: lowercase kebab-case, 2-4 words, hyphens only — e.g. `feat/ai-event-handler`, `fix/null-guard-context-args`, `chore/update-lockfile`.
 

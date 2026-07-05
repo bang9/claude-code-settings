@@ -292,7 +292,7 @@ function checkSkill(skillMdPath) {
   // --- description ---
   // Note on layering: the rule gate only proves a trigger phrase is *present*.
   // Trigger *quality* (does it fire on the right situations, stay specific,
-  // avoid over-eager matches) is a judgment check scored against criteria.md.
+  // avoid over-eager matches) is a judgment check scored in steps/4-judgment-review.md.
   // A strong leading "use when"/"when ..." passes silently; a bare mid-sentence
   // "when" passes only with a MINOR advisory so a clean run never lulls a
   // reviewer into trusting the rule layer for trigger quality.

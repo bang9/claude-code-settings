@@ -1,6 +1,6 @@
 ---
 name: pr-author
-description: PR author workflow — create PRs or respond to review feedback. Use when the user is working on their own PR (drafting, handling reviewer comments, verifying fixes, requesting re-review).
+description: Use when the user is working on their own PR — drafting/creating it, handling reviewer comments, verifying fixes, or requesting re-review.
 ---
 
 # PR Author
@@ -13,7 +13,7 @@ Determine the sub-command from args or conversation context:
 |---|---|---|
 | `create`, "PR 만들어", "PR 작성", no existing PR for branch | **create** | Read and follow `create/index.md` |
 | `respond`, "리뷰 반영", "피드백 처리", review feedback mentioned | **respond** | Read and follow `respond/index.md` |
-| (no arg, ambiguous) | Auto-detect or ask |
+| (no arg, ambiguous) | — | Auto-detect (see Auto-Detection) or ask the operator |
 
 ## Auto-Detection
 

@@ -2,14 +2,6 @@
 
 Handle review feedback on your own PR: triage unresolved threads, dispatch fixes, verify the result, and request re-review.
 
-## Anti-patterns
-
-- Render the triage form as terminal markdown — use `scripts/run.sh`
-- Describe intended fixes in terminal text — dispatch via SubAgent
-- Act on a discuss item before the operator gives a concrete decision
-- Dispatch to Phase 6 without operator confirming the execution preview
-- Skip self-check and auto-resolve without verifying the fix
-
 ## Execution Checklist
 
 - [ ] **1** PR discovered — `pr_number`, `title`, `author`, `base_branch`, `head_branch`, `url`, `owner`, `repo` stored

@@ -86,10 +86,10 @@ cmd_init() {
 
   # Detect PR
   local pr_json
-  pr_json=$(gh pr view --json number,headRefBranch 2>/dev/null) || die "no PR found for current branch. push and create a PR first"
+  pr_json=$(gh pr view --json number,headRefName 2>/dev/null) || die "no PR found for current branch. push and create a PR first"
   local pr_number branch
   pr_number=$(echo "$pr_json" | jq -r '.number')
-  branch=$(echo "$pr_json" | jq -r '.headRefBranch')
+  branch=$(echo "$pr_json" | jq -r '.headRefName')
 
   # Create session directory
   local project_dir

@@ -1,6 +1,6 @@
 # UI Reconstruction Prompt
 
-Prompt template for Phase 2C codex session. Replace `<placeholders>` with actual values.
+Prompt template for the Phase 2B UI-reconstruction subagent (spawned via the Agent tool). Replace `<placeholders>` with actual values.
 
 ```
 ## Context
