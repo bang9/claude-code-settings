@@ -27,17 +27,10 @@ BAR_WIDTH=10
 # Helper Functions
 # -----------------------------------------------------------------------------
 
-# "Opus 4.6 (1M context)" -> "opus[1m]", "Sonnet 4" -> "sonnet"
+# "Opus 4.6 (1M context)" -> "opus", "Sonnet 4" -> "sonnet"
 simplify_model_name() {
   local raw=$1
-  local family ctx
-  family=$(echo "$raw" | sed -E 's/^(Claude )?([A-Za-z]+).*/\2/' | tr '[:upper:]' '[:lower:]')
-  ctx=$(echo "$raw" | grep -oE '\([0-9]+[KkMm]' | tr -d '(' | tr '[:upper:]' '[:lower:]')
-  if [[ -n "$ctx" ]]; then
-    echo "${family}[${ctx}]"
-  else
-    echo "$family"
-  fi
+  echo "$raw" | sed -E 's/^(Claude )?([A-Za-z]+).*/\2/' | tr '[:upper:]' '[:lower:]'
 }
 
 format_tokens() {
