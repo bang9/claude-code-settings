@@ -14,6 +14,8 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;93m'
 RED='\033[1;31m'
 BLUE='\033[1;34m'
+ORANGE='\033[1;38;5;208m'
+PURPLE='\033[1;38;5;135m'
 DIM='\033[2m'
 NORMAL='\033[22m'
 RESET='\033[0m'
@@ -31,6 +33,18 @@ BAR_WIDTH=10
 simplify_model_name() {
   local raw=$1
   echo "$raw" | sed -E 's/^(Claude )?([A-Za-z]+).*/\2/' | tr '[:upper:]' '[:lower:]'
+}
+
+# Effort level as a circle that fills up; color is a redundant second signal.
+# Empty for models without effort support, which omit the field entirely.
+get_effort_dot() {
+  case "$1" in
+    low)    echo "${YELLOW}○${RESET}" ;;
+    medium) echo "${BLUE}◔${RESET}" ;;
+    high)   echo "${GREEN}◑${RESET}" ;;
+    xhigh)  echo "${ORANGE}◕${RESET}" ;;
+    max)    echo "${PURPLE}●${RESET}" ;;
+  esac
 }
 
 format_tokens() {
@@ -121,10 +135,11 @@ if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
   } >> "$STATUSLINE_LOG"
 fi
 
-IFS=$'\t' read -r raw_model total_input_tokens context_percent session_cost \
+IFS=$'\t' read -r raw_model effort_level total_input_tokens context_percent session_cost \
   rl_5h_pct rl_5h_reset rl_7d_pct rl_7d_reset <<< \
   "$(echo "$input" | jq -r '[
     (.model.display_name // "Sonnet 4"),
+    (.effort.level // "none"),
     ((.context_window.current_usage | (.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)) // 0),
     (.context_window.used_percentage // 0),
     (.cost.total_cost_usd // 0),
@@ -135,6 +150,7 @@ IFS=$'\t' read -r raw_model total_input_tokens context_percent session_cost \
   ] | @tsv' 2>/dev/null)"
 
 model=$(simplify_model_name "$raw_model")
+effort_level=${effort_level:-none}
 session_cost=${session_cost:-0}
 rl_5h_pct=${rl_5h_pct:--1}
 rl_5h_reset=${rl_5h_reset:-0}
@@ -142,7 +158,7 @@ rl_7d_pct=${rl_7d_pct:--1}
 rl_7d_reset=${rl_7d_reset:-0}
 
 if [[ "$STATUSLINE_DEBUG" == "1" ]]; then
-  echo "--- model=$model tokens=$total_input_tokens used=$context_percent% cost=$session_cost ---" >> "$STATUSLINE_LOG"
+  echo "--- model=$model effort=$effort_level tokens=$total_input_tokens used=$context_percent% cost=$session_cost ---" >> "$STATUSLINE_LOG"
 fi
 
 # -----------------------------------------------------------------------------
@@ -178,10 +194,11 @@ fi
 # Assemble
 formatted_tokens=$(format_tokens "$total_input_tokens")
 session_cost_fmt=$(printf "\$%.2f" "$session_cost")
+effort_dot=$(get_effort_dot "$effort_level")
 
 output="🌿 ${branch}${git_status}"
 output+=" | ${bar} ${context_color}${context_percent}%${RESET} ${DIM}(${formatted_tokens})${NORMAL}${RESET}"
 output+="${rate_info}"
-output+=" | ${model} · 💰 ${session_cost_fmt}"
+output+=" | ${effort_dot}${effort_dot:+ }${model} · 💰 ${session_cost_fmt}"
 
 echo -e "$output"
