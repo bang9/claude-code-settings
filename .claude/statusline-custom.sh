@@ -50,9 +50,9 @@ get_effort_dot() {
 format_tokens() {
   local tokens=$1
   if [[ "$tokens" -ge 1000000 ]]; then
-    printf "%.1fM" "$(echo "scale=1; $tokens / 1000000" | bc)"
+    printf "%d.%dM" $((tokens / 1000000)) $((tokens % 1000000 / 100000))
   elif [[ "$tokens" -ge 1000 ]]; then
-    printf "%.1fk" "$(echo "scale=1; $tokens / 1000" | bc)"
+    printf "%d.%dk" $((tokens / 1000)) $((tokens % 1000 / 100))
   else
     echo "$tokens"
   fi
