@@ -155,11 +155,14 @@ Search the review-since diff for changes related to this thread:
 
 For matches — compare the actual change with the reviewer's request:
 
+Apply the Evidence rules in `../SKILL.md`: for behavioral fixes, inspect the original scenario or focused check after the fix and compare with the observed failure where practical. Record the checked commit/version, relevant output or source link, and verification scope. A matching code edit alone does not prove the reported behavior is fixed; report missing verification separately from a confirmed remaining bug.
+
 | Verdict | Meaning |
 |---------|---------|
-| **addressed** | Request fully reflected in code |
+| **addressed** | Request fully reflected and supported by the relevant result evidence; a direct code check can suffice for code-only requests |
 | **partially** | Some aspects addressed, others missing or different approach |
 | **unaddressed** | No relevant change, or change doesn't match |
+| **unverified** | Code appears to address the request, but necessary result verification is unavailable |
 | **replied** | No code change; author replied with explanation (question type) |
 
 ### Step 3: Check side effects
@@ -185,6 +188,7 @@ For `addressed` or `partially` verdicts:
 | partially | clean | **flag** — note what's missing |
 | partially | concern | **flag** — both issues |
 | unaddressed | — | **flag** — not addressed |
+| unverified | — | **flag** — report the verification gap, not a confirmed remaining bug |
 | replied | — | **judge** — evaluate if reply is sufficient |
 
 ## Phase 3: Report & Action
@@ -217,6 +221,8 @@ Threads verified: N
 ```
 
 ### 3.2 Operator Actions
+
+Recheck the PR head before resolving threads. If it changed since verification, reassess the affected fixes and evidence first. An outdated thread marker alone does not prove the original concern was addressed.
 
 **Resolved threads**: Resolve via GraphQL (parallel):
 

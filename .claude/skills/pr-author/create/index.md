@@ -6,7 +6,7 @@ Create a well-structured pull request from the current branch.
 
 - [ ] **1** Branch validated — not on default branch, has commits ahead
 - [ ] **2** Context collected — commits, diff stats, changed files, related issues
-- [ ] **3** PR draft assembled — title, body with summary and test plan
+- [ ] **3** PR draft assembled — title, summary, problem/result evidence, and verification limits
 - [ ] **4** Draft presented to operator for review
 - [ ] **5** PR created via `gh pr create`
 
@@ -74,12 +74,32 @@ If a PR template exists under `.github/` (e.g., `.github/pull_request_template.m
      - How does the new end-to-end flow work?
      - Which exact hunks matter most?
      - What is still ambiguous from code alone? -->
+
+## Evidence
+<!-- Show the observed problem and the result for the same scenario or focused check.
+     Use screenshots, video, sanitized logs/output, or links as appropriate.
+     Identify what was actually verified and any remaining limits. -->
 ```
 
 Rules:
 - Keep the HTML comments in place — they guide reviewers reading the raw body and future operators editing it
 - Delete `Context` lines that don't apply; don't leave placeholder URLs
 - Do not include implementation details that are obvious from the diff
+- Apply the Evidence rules in `../SKILL.md`. Use the target repo's required sections; an unexecuted test plan does not replace evidence of a result.
+
+### Evidence attachments
+
+Check the installed command's `--help` before using attachment flags. `gh 2.102.0` supports image/video attachments on `gh pr create`, `gh pr edit`, and `gh pr comment`:
+
+```bash
+gh pr create --title 'fix: describe the change' --body-file /tmp/pr-body.md --attach './before.png#Before the fix' --attach './after.png#After the fix'
+gh pr edit 123 --attach './repro.mp4'
+```
+
+- Repeat `--attach` for multiple files. An image's optional alt text follows `#`; quote the entire argument. Videos have no alt text.
+- A body reference such as `![After the fix](./after.png)` is rewritten to the uploaded asset URL. Unreferenced attachments are appended. Place evidence beside the claim it supports.
+- Put log/test excerpts in fenced code blocks or link to their source; do not assume an image/video flag accepts arbitrary log files.
+- Verify the published body and asset links. Some uploads can succeed even when the command exits nonzero and the PR is already created/updated. Inspect the returned PR before retrying to avoid duplicates.
 
 ## Phase 4: Operator Review
 
@@ -92,11 +112,11 @@ Present the draft title and body. Wait for operator confirmation or edits.
 ## Phase 5: PR Creation
 
 ```bash
-gh pr create --title "<title>" --body "<body>" [--draft]
+gh pr create --title "<title>" --body-file /tmp/pr-body.md [--draft]
 ```
 
 - Default to regular PR. Use `--draft` only if operator requests it
 - If the branch is not pushed: `git push -u origin HEAD` before creating
 - For org repos, respect CLAUDE.md GH_TOKEN override guidance
 
-After creation, report the PR URL.
+After creation, verify the body and attachments, then report the PR URL, current head, check/review status, and Draft/Ready state. Follow the target repo's readiness policy; pending checks and missing live verification must remain explicit.
