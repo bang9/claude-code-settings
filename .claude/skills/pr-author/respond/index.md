@@ -338,24 +338,26 @@ For each source thread in the completed task:
    - Does the fix address the core of the reviewer's request?
    - Is the approach consistent with what was discussed in the thread?
    - Are there any obvious oversights?
+4. **Verify the result**: Apply the Evidence rules in `../SKILL.md`. For behavioral fixes, inspect the same reproduction or focused check before/after where practical. Record the relevant commit and observed result, and distinguish unit/mocked checks from live verification. If verification is missing, report the gap instead of claiming the behavior was confirmed.
 
 Verdict per thread:
 
 | Verdict | Meaning |
 |---------|---------|
-| **verified** | Fix matches reviewer intent |
+| **verified** | Fix matches reviewer intent and the relevant evidence supports the result; a direct code check can suffice for code-only requests |
 | **mismatch** | Fix doesn't address the core request or went in a different direction |
 | **partial** | Addresses some but not all of the request |
+| **unverified** | Code appears to address the request, but necessary result verification is unavailable |
 
 ### 7.2 Auto-resolve
 
 For `verified` threads with `auto_resolve=true`:
 
 1. Re-fetch thread status (stale check #2) — skip if already resolved
-2. Post comment on all non-stale threads in parallel (e.g., "Fixed in <short-sha>: <brief>"). Use the language the review conversation is in. Use 7-character short SHA.
+2. Post comment on all non-stale threads in parallel (e.g., "Fixed in <short-sha>: <brief>. Verified by <check/result or evidence link>."). Use the language the review conversation is in. Use 7-character short SHA. Keep any remaining verification limit explicit.
 3. After all comments succeed, resolve all threads in parallel
 
-For `mismatch` or `partial` threads — do NOT auto-resolve. Report to operator:
+For `mismatch`, `partial`, or `unverified` threads — do NOT auto-resolve. Report to operator:
 
 ```
 ## Self-Check Results

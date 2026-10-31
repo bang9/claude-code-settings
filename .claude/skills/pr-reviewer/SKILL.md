@@ -5,6 +5,18 @@ description: Use when reviewing someone else's PR at any stage of the review lif
 
 # PR Reviewer
 
+## Evidence
+
+Apply these rules across the review lifecycle; digest remains read-only and makes no review judgments:
+
+- Inspect evidence relevant to the PR's claims: linked logs, requests/responses, tests, screenshots, recordings, or CI. Identify the version/commit, environment, and reproduction conditions. Report inaccessible evidence and validation gaps explicitly.
+- In write/followup, support a bug finding with a concrete trigger, reachable code/data flow, violated contract, and impact. Precise code references can establish a deterministic bug or policy violation without a live reproduction; add a minimal reproducer, test, log, screenshot, video, or link when useful.
+- For environment-dependent claims, check the relevant code version and configuration where accessible. Distinguish deployed observations from repository defaults and inferred behavior. A different branch's default or a similar past incident alone does not prove a current failure.
+- Keep unverified possibilities separate from confirmed findings. Missing live verification is not itself proof of a bug. Investigate contradictory evidence and correct or withdraw a finding when its premise is disproved.
+- For follow-up fixes, prefer the original scenario or focused check failing before and passing after. State the scope of each result: mocked/unit, local integration, CI, or live. A changed diff, outdated marker, or test count alone does not establish that the concern is resolved.
+- Recheck the PR head before posting or approving. If it changed, reassess affected findings and evidence; do not present an old-head review as approval of the new head. Keep pending checks and unresolved threads explicit.
+- Use short, relevant evidence excerpts and redact secrets/unrelated customer data. Collection and publication stay within the operator's authorized scope; do not deploy, mutate live data, or create extra hosting comments merely to obtain evidence.
+
 ## Routing
 
 Determine the sub-command from args or conversation context:

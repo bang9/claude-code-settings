@@ -22,6 +22,8 @@ Interactive code review workflow. The operator drives focus areas, Claude invest
    - `git diff <base>...HEAD --name-only` — changed files
 3. Present concise overview table (package / area / summary)
 
+Record the reviewed head with `gh pr view --json headRefOid`. Apply the Evidence rules in `../SKILL.md` when investigating findings and checking the PR's claimed results.
+
 ### 1.2 Comment Session
 
 Initialize or resume the comment management session:
@@ -121,6 +123,7 @@ When the operator says "fix that one", "add more to it":
 - Reference specific file paths and line numbers
 - Explain the problem AND suggest a direction
 - Describe runtime behavior with step-by-step execution traces, not abstractions
+- Include the concrete trigger and supporting code, reproduction, test/log excerpt, screenshot/video, or source link. Keep unverified questions separate from confirmed bug claims.
 - Use concrete code snippets / markdown code blocks for API change proposals
 - Note cross-package impact (react/rn)
 - Distinguish severity: structural concern vs nit
@@ -139,6 +142,8 @@ Maintain after each comment change:
 ## Phase 3: Submission
 
 ### 3.1 Push drafts to GitHub
+
+Recheck the current head before submission. If it differs from the reviewed head, reassess affected comments and evidence before publishing; do not submit stale conclusions as a review of the new commit.
 
 ```bash
 ./prc.sh submit --draft
